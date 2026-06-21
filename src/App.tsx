@@ -36,7 +36,8 @@ import {
   saveChat,
   saveMultipleChats,
   syncBanner,
-  saveBanner
+  saveBanner,
+  clearAllExceptUsers
 } from './firebase';
 import { Sparkles, ShoppingBag, ShieldAlert, BadgeCheck, MessageSquare, Plus, CheckCircle, XCircle, AlertCircle, Search, Users, SlidersHorizontal, Heart, Mail, Headphones } from 'lucide-react';
 
@@ -87,6 +88,9 @@ export default function App() {
   // Auth User Session State
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [banner, setBanner] = useState<BannerConfig[]>([]);
+
+  const liveUser = currentUser ? users.find((u) => u.id === currentUser.id) : null;
+  const isCurrentUserBanned = liveUser?.isBanned || currentUser?.isBanned || false;
 
   const isVideoVal = (src?: string | null) => {
     return src?.startsWith('data:video/') || src?.match(/\.(mp4|webm|ogg|mov|mkv|3gp)(\?.*)?$/i);
@@ -233,10 +237,24 @@ export default function App() {
     });
 
     const unsubProducts = syncProducts((fetchedProducts) => {
-      if (fetchedProducts.length === 0) {
+      // Automatic removal of "Pedang Langka" product as requested by user
+      const annoyingProducts = fetchedProducts.filter(
+        (p) => p.id === 102 || p.title.toLowerCase().includes('pedang langka') || p.title.toLowerCase().includes('rare sword')
+      );
+      if (annoyingProducts.length > 0) {
+        annoyingProducts.forEach((p) => {
+          deleteProductDoc(p.id).catch(console.error);
+        });
+      }
+
+      const filtered = fetchedProducts.filter(
+        (p) => !(p.id === 102 || p.title.toLowerCase().includes('pedang langka') || p.title.toLowerCase().includes('rare sword'))
+      );
+
+      if (filtered.length === 0) {
         saveMultipleProducts(INITIAL_PRODUCTS).catch(console.error);
       } else {
-        setProducts(fetchedProducts);
+        setProducts(filtered);
       }
     });
 
@@ -393,6 +411,11 @@ export default function App() {
   const handleProductSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
+
+    if (isCurrentUserBanned) {
+      triggerToast('Gagal memproses jualan: Akun Anda telah di-banned! Anda tidak dapat menjual barang.', 'error');
+      return;
+    }
 
     if (!formTitle.trim() || !formDesc.trim() || !formPrice.trim() || !formStock.trim()) {
       triggerToast('Seluruh kolom wajib diisi kecuali kontak opsional!', 'error');
@@ -553,6 +576,11 @@ export default function App() {
   const handleExecuteOrder = () => {
     if (!currentUser || !activeBuyingProduct) return;
 
+    if (isCurrentUserBanned) {
+      triggerToast('Transaksi Gagal: Akun Anda telah di-banned! Anda tidak dapat membeli barang.', 'error');
+      return;
+    }
+
     let requestQty = parseInt(buyQty);
     if (isNaN(requestQty) || requestQty <= 0) {
       triggerToast('Kuantitas pembelian tidak valid!', 'error');
@@ -677,44 +705,55 @@ export default function App() {
   };
 
   // Developer Admin settings callback updates
-  const handleToggleUserVerif = (userId: string) => {
+  const handleToggleUserVerif = async (userId: string) => {
+    let updatedUser: User | null = null;
     const list = users.map((u) => {
       if (u.id === userId) {
-        return { ...u, verified: !u.verified };
+        const up = { ...u, verified: !u.verified };
+        updatedUser = up;
+        return up;
       }
       return u;
     });
 
-    // Update session wrapper too if it is the current logged-in user
-    if (currentUser?.id === userId) {
-      const updatedSess = { ...currentUser, verified: !currentUser.verified };
-      setCurrentUser(updatedSess);
-      localStorage.setItem('sv_current_user', JSON.stringify(updatedSess));
+    if (updatedUser) {
+      await saveUser(updatedUser);
     }
 
-    saveUsersToLocal(list);
+    if (currentUser?.id === userId && updatedUser) {
+      setCurrentUser(updatedUser);
+      localStorage.setItem('sv_current_user', JSON.stringify(updatedUser));
+    }
+
+    setUsers(list);
     triggerToast('Status verifikasi tanda biru pengguna diperbarui!', 'success');
   };
 
-  const handleUpdateUserRole = (userId: string, newRole: 'user' | 'seller' | 'admin' | 'developer') => {
+  const handleUpdateUserRole = async (userId: string, newRole: 'user' | 'seller' | 'admin' | 'developer') => {
+    let updatedUser: User | null = null;
     const list = users.map((u) => {
       if (u.id === userId) {
-        return { ...u, role: newRole };
+        const up = { ...u, role: newRole };
+        updatedUser = up;
+        return up;
       }
       return u;
     });
 
-    if (currentUser?.id === userId) {
-      const updatedSess = { ...currentUser, role: newRole };
-      setCurrentUser(updatedSess);
-      localStorage.setItem('sv_current_user', JSON.stringify(updatedSess));
+    if (updatedUser) {
+      await saveUser(updatedUser);
     }
 
-    saveUsersToLocal(list);
+    if (currentUser?.id === userId && updatedUser) {
+      setCurrentUser(updatedUser);
+      localStorage.setItem('sv_current_user', JSON.stringify(updatedUser));
+    }
+
+    setUsers(list);
     triggerToast(`Status role pengguna berhasil diperbarui menjadi ${newRole.toUpperCase()}!`, 'success');
   };
 
-  const handleToggleUserBan = (userId: string) => {
+  const handleToggleUserBan = async (userId: string) => {
     if (currentUser?.role !== 'developer') {
       triggerToast('Hanya Developer yang memiliki hak tertinggi untuk mem-banned pengguna!', 'error');
       return;
@@ -724,57 +763,89 @@ export default function App() {
       return;
     }
 
+    let updatedUser: User | null = null;
     const list = users.map((u) => {
       if (u.id === userId) {
-        return { ...u, isBanned: !u.isBanned };
+        const up = { ...u, isBanned: !u.isBanned };
+        updatedUser = up;
+        return up;
       }
       return u;
     });
 
-    saveUsersToLocal(list);
+    if (updatedUser) {
+      await saveUser(updatedUser);
+    }
 
-    const updatedUser = list.find((u) => u.id === userId);
-    if (updatedUser?.isBanned) {
-      triggerToast(`Akun @${updatedUser.username} berhasil dibanned dari platform!`, 'success');
+    setUsers(list);
+
+    if (updatedUser && (updatedUser as User).isBanned) {
+      triggerToast(`Akun @${(updatedUser as User).username} berhasil dibanned dari platform!`, 'success');
     } else {
-      triggerToast(`Hukuman ban akun @${updatedUser?.username || 'pengguna'} telah dicabut!`, 'success');
+      triggerToast(`Hukuman ban akun @${updatedUser ? (updatedUser as User).username : 'pengguna'} telah dicabut!`, 'success');
     }
   };
 
-  const handleUpdateCustomBadge = (userId: string, badgeText: string) => {
+  const handleUpdateCustomBadge = async (userId: string, badgeText: string) => {
+    let updatedUser: User | null = null;
     const list = users.map((u) => {
       if (u.id === userId) {
-        return { ...u, customRole: badgeText };
+        const up = { ...u, customRole: badgeText };
+        updatedUser = up;
+        return up;
       }
       return u;
     });
 
-    if (currentUser?.id === userId) {
-      const updatedSess = { ...currentUser, customRole: badgeText };
-      setCurrentUser(updatedSess);
-      localStorage.setItem('sv_current_user', JSON.stringify(updatedSess));
+    if (updatedUser) {
+      await saveUser(updatedUser);
     }
 
-    saveUsersToLocal(list);
+    if (currentUser?.id === userId && updatedUser) {
+      setCurrentUser(updatedUser);
+      localStorage.setItem('sv_current_user', JSON.stringify(updatedUser));
+    }
+
+    setUsers(list);
     triggerToast('Label badge kustom pengguna disimpan!', 'success');
   };
 
-  const handleUpdateUserBalance = (userId: string, newBalance: number) => {
+  const handleUpdateUserBalance = async (userId: string, newBalance: number) => {
+    let updatedUser: User | null = null;
     const list = users.map((u) => {
       if (u.id === userId) {
-        return { ...u, balance: newBalance };
+        const up = { ...u, balance: newBalance };
+        updatedUser = up;
+        return up;
       }
       return u;
     });
 
-    if (currentUser?.id === userId) {
-      const updatedSess = { ...currentUser, balance: newBalance };
-      setCurrentUser(updatedSess);
-      localStorage.setItem('sv_current_user', JSON.stringify(updatedSess));
+    if (updatedUser) {
+      await saveUser(updatedUser);
     }
 
-    saveUsersToLocal(list);
+    if (currentUser?.id === userId && updatedUser) {
+      setCurrentUser(updatedUser);
+      localStorage.setItem('sv_current_user', JSON.stringify(updatedUser));
+    }
+
+    setUsers(list);
     triggerToast('Saldo dompet pengguna berhasil diubah!', 'success');
+  };
+
+  const handleResetDatabase = async () => {
+    try {
+      await clearAllExceptUsers();
+      setProducts([]);
+      setTransactions([]);
+      setChats([]);
+      setBanner([]);
+      triggerToast('Database berhasil di-reset sepenuhnya ke 0 (kecuali pengguna)!', 'success');
+    } catch (err) {
+      console.error(err);
+      triggerToast('Gagal me-reset database: ' + (err as any).message, 'error');
+    }
   };
 
   const handleUpdateBanner = async (newBanner: BannerConfig | BannerConfig[]) => {
@@ -794,6 +865,12 @@ export default function App() {
 
   const handleSendChatMessage = (receiverId: string, productId: number, text: string, image?: string | null, video?: string | null) => {
     if (!currentUser) return;
+
+    if (isCurrentUserBanned) {
+      triggerToast('Gagal mengirim pesan: Akun Anda telah di-banned!', 'error');
+      return;
+    }
+
     const p = products.find((x) => x.id === productId);
     const sellerId = p ? p.sellerId : receiverId;
     const buyerId = currentUser.id === sellerId ? receiverId : currentUser.id;
@@ -988,6 +1065,13 @@ export default function App() {
             isDarkMode={isDarkMode}
             onToggleTheme={handleToggleTheme}
           />
+        </div>
+      )}
+
+      {currentUser && isCurrentUserBanned && (
+        <div className="bg-red-650 text-white text-center py-2 px-4 font-black text-xs sm:text-xs flex items-center justify-center gap-2 select-none shrink-0 border-b border-red-800 tracking-tight z-30">
+          <ShieldAlert size={14} className="shrink-0" />
+          <span>⚠️ AKUN ANDA TELAH DIBANNED! Anda tidak dapat melangsungkan transaksi beli, membuat jualan baru, atau berpartisipasi dalam chat.</span>
         </div>
       )}
 
@@ -1752,6 +1836,7 @@ export default function App() {
                 banner={banner}
                 onUpdateBanner={handleUpdateBanner}
                 onUpdateUserBalance={handleUpdateUserBalance}
+                onResetDatabase={handleResetDatabase}
               />
             )}
 

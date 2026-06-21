@@ -22,6 +22,7 @@ interface DeveloperPanelProps {
   banner: BannerConfig[];
   onUpdateBanner: (banner: BannerConfig | BannerConfig[]) => void;
   onUpdateUserBalance: (userId: string, balance: number) => void;
+  onResetDatabase?: () => void;
 }
 
 type DevTab = 'users' | 'products' | 'transactions' | 'chats' | 'banner' | 'branding';
@@ -41,6 +42,7 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
   banner,
   onUpdateBanner,
   onUpdateUserBalance,
+  onResetDatabase,
 }) => {
   const [activeTab, setActiveTab] = useState<DevTab>('users');
   const [userBadgeInputs, setUserBadgeInputs] = useState<{ [userId: string]: string }>({});
@@ -53,10 +55,14 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
 
   // Keep local banners in sync with prop updates when they change from DB
   React.useEffect(() => {
-    if (banner && banner.length > 0) {
+    if (banner) {
       setLocalBanners(banner);
-      if (!selectedBannerId || !banner.some(b => b.id === selectedBannerId)) {
-        setSelectedBannerId(banner[0].id);
+      if (banner.length > 0) {
+        if (!selectedBannerId || !banner.some(b => b.id === selectedBannerId)) {
+          setSelectedBannerId(banner[0].id);
+        }
+      } else {
+        setSelectedBannerId('');
       }
     }
   }, [banner]);
@@ -545,7 +551,11 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
                     </td>
                     <td className="p-3 font-bold text-zinc-300">{p.stock}</td>
                     <td className="p-3">
-                      {deleteConfirmId === p.id ? (
+                      {currentUser.role === 'developer' ? (
+                        <span className="text-[9.5px] text-zinc-500 font-bold bg-zinc-900/60 px-2 py-1 rounded-md border border-zinc-850/50 select-none cursor-not-allowed" title="Developer tidak diizinkan menghapus listing jualan langsung.">
+                          🔒 Terkunci (Dev)
+                        </span>
+                      ) : deleteConfirmId === p.id ? (
                         <div className="flex items-center gap-1">
                           <span className="text-[8px] text-red-450 font-extrabold uppercase">Hapus?</span>
                           <button
@@ -567,7 +577,7 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
                       ) : (
                         <button
                           onClick={() => setDeleteConfirmId(p.id)}
-                          className="px-2 py-1 bg-red-500/10 hover:bg-red-500/25 border border-red-500/35 text-red-400 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all"
+                          className="px-2 py-1 bg-red-500/10 hover:bg-red-500/25 border border-red-500/35 text-red-400 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all animate-fade-in"
                         >
                           <Trash2 size={11} />
                           Hapus
@@ -727,23 +737,21 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
                   <span className="text-[10.5px] font-bold">
                     {idx + 1}. {p.title || '(Tanpa Judul)'}
                   </span>
-                  {localBanners.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const updated = localBanners.filter(b => b.id !== p.id);
-                        setLocalBanners(updated);
-                        if (activeSelectedBanner?.id === p.id) {
-                          setSelectedBannerId(updated[0]?.id || '');
-                        }
-                      }}
-                      className="p-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-md transition-all active:scale-95 cursor-pointer"
-                      title="Hapus Banner"
-                    >
-                      <Trash2 size={11} />
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const updated = localBanners.filter(b => b.id !== p.id);
+                      setLocalBanners(updated);
+                      if (activeSelectedBanner?.id === p.id) {
+                        setSelectedBannerId(updated[0]?.id || '');
+                      }
+                    }}
+                    className="p-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-md transition-all active:scale-95 cursor-pointer"
+                    title="Hapus Banner"
+                  >
+                    <Trash2 size={11} />
+                  </button>
                 </div>
               ))}
 
@@ -1043,6 +1051,29 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
               </div>
             </>
           )}
+
+          {localBanners.length === 0 && (
+            <div className="bg-zinc-900/40 p-6 rounded-2xl border border-zinc-900 flex flex-col items-center justify-center text-center space-y-4">
+              <span className="text-zinc-500 text-3xl">📭</span>
+              <div>
+                <p className="text-[11px] text-zinc-400 font-bold uppercase tracking-wider mb-1">
+                  Semua Banner Dihapus / Kosong
+                </p>
+                <p className="text-[9.5px] text-zinc-500 font-medium">
+                  Beranda utama pembeli tidak akan menampilkan banner promosi/iklan geser.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  onUpdateBanner([]);
+                }}
+                className="px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-black uppercase transition-all shadow-lg select-none cursor-pointer click-animation"
+              >
+                Simpan & Sinkronkan Hapus Semua Banner ({localBanners.length} Banner)
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -1164,6 +1195,33 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
                   Logo ini akan menggantikan semua ikon di login screen, navbar, splash loading, dan footer.
                 </p>
               </div>
+            </div>
+          </div>
+
+          {/* DATABASE CLEAN ENGINE (RESET SEMUA KE 0 KECUALI USER) */}
+          <div className="bg-red-950/10 border border-red-900/35 p-5 rounded-2xl space-y-4 mt-6">
+            <div className="flex items-center gap-2 text-red-400">
+              <AlertCircle size={18} className="animate-pulse" />
+              <h4 className="font-black text-xs uppercase tracking-tight">Pembersihan Massal & Reset Data Platform (BETA)</h4>
+            </div>
+            <p className="text-[10.5px] text-zinc-400 leading-normal font-semibold">
+              Fitur ini akan menghapus semua <strong className="text-zinc-200">Produk/Jualan</strong>, seluruh riwayat <strong className="text-zinc-200">Transaksi</strong>, serta semua obrolan <strong className="text-zinc-100">Chat</strong> di database Firestore, mengembalikan semuanya ke angka 0 secara instan & realtime. Pengguna/User akun tidak akan dihapus.
+            </p>
+            <div className="pt-1 flex">
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm('PERINGATAN: Apakah Anda yakin ingin menghapus semua Produk, Transaksi, dan Chat di platform ini? Tindakan ini tidak dapat dibatalkan!')) {
+                    if (onResetDatabase) {
+                      onResetDatabase();
+                    }
+                  }
+                }}
+                className="px-5 py-2.5 bg-red-650 hover:bg-red-600 text-white font-black text-[10.5px] uppercase rounded-xl tracking-wider transition-all cursor-pointer select-none active:scale-95 flex items-center gap-1.5 shadow-md shadow-red-950/50"
+              >
+                <Trash2 size={13} />
+                Hapus & Reset Semua Jualan, Transaksi & Chat (Jadikan 0)
+              </button>
             </div>
           </div>
         </div>

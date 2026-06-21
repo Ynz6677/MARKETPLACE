@@ -80,38 +80,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   console.warn('Firestore Non-Fatal Warning: ', JSON.stringify(errInfo));
 }
 
-const defaultBanners: BannerConfig[] = [
-  {
-    id: 'banner_1',
-    imageUrl: 'https://images.unsplash.com/photo-1621761191319-c6fb62004040?q=85&w=1200',
-    title: 'POPOLNI CRYPTO',
-    subtitle: 'Beli Saldo Crypto & Diamond Instan, Bonus up to 5%! WAST',
-    buttonText: 'Popolnit balance',
-    buttonLink: '#',
-    bgColor: '#002663', 
-    accentColor: '#0084ff'
-  },
-  {
-    id: 'banner_2',
-    imageUrl: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=1200',
-    title: 'FLASH SALE ROBUX 100K POCKET',
-    subtitle: 'Robux Legal & Aman via Gamepass, rate tertinggi! Pengiriman instan sekarang.',
-    bgColor: '#1e004d',
-    accentColor: '#00e5ff',
-    buttonText: 'Beli Sekarang',
-    buttonLink: '#',
-  },
-  {
-    id: 'banner_3',
-    imageUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200',
-    title: 'PREMIUM GODLY MM2 ITEMS',
-    subtitle: 'Weapon Godly termurah se-Indonesia! Menangkan matches dengan pedang kosmetik elite.',
-    bgColor: '#043d2f',
-    accentColor: '#10b981',
-    buttonText: 'Mulai Cari Pedang',
-    buttonLink: '#',
-  }
-];
+const defaultBanners: BannerConfig[] = [];
 
 // Seeding engine
 let hasSeeded = false;
@@ -411,18 +380,23 @@ export const saveMultipleChats = async (chatsList: ChatMessage[]) => {
 
 export const saveBanner = async (banner: BannerConfig | BannerConfig[]) => {
   const current = getCachedList<BannerConfig>('_fs_cache_banner', defaultBanners);
-  const toSave = Array.isArray(banner) ? banner : [banner];
   
-  let updated = [...current];
-  toSave.forEach((b) => {
-    updated = updated.filter(x => x.id !== b.id);
-    updated.push(b);
-  });
+  let updated = Array.isArray(banner) ? banner : [...current.filter(x => x.id !== banner.id), banner];
   saveCachedList('_fs_cache_banner', updated);
 
   try {
     if (Array.isArray(banner)) {
+      const snap = await getDocs(collection(db, 'banner'));
       const batch = writeBatch(db);
+      
+      snap.docs.forEach((d) => {
+        const id = d.id;
+        const exists = banner.some((b) => b.id === id);
+        if (!exists) {
+          batch.delete(doc(db, 'banner', id));
+        }
+      });
+
       banner.forEach((b) => {
         batch.set(doc(db, 'banner', b.id), b);
       });
@@ -456,5 +430,42 @@ export const uploadFileToStorage = async (file: File, folder: string = 'media'):
   } catch (error) {
     console.error('Gagal mengunggah file ke Firebase Storage:', error);
     throw error;
+  }
+};
+
+export const clearAllExceptUsers = async () => {
+  saveCachedList('_fs_cache_products', []);
+  saveCachedList('_fs_cache_transactions', []);
+  saveCachedList('_fs_cache_chats', []);
+  saveCachedList('_fs_cache_banner', []);
+
+  try {
+    const batch = writeBatch(db);
+
+    const prodSnap = await getDocs(collection(db, 'products'));
+    prodSnap.docs.forEach((d) => {
+      batch.delete(doc(db, 'products', d.id));
+    });
+
+    const txSnap = await getDocs(collection(db, 'transactions'));
+    txSnap.docs.forEach((d) => {
+      batch.delete(doc(db, 'transactions', d.id));
+    });
+
+    const chatSnap = await getDocs(collection(db, 'chats'));
+    chatSnap.docs.forEach((d) => {
+      batch.delete(doc(db, 'chats', d.id));
+    });
+
+    const bannerSnap = await getDocs(collection(db, 'banner'));
+    bannerSnap.docs.forEach((d) => {
+      batch.delete(doc(db, 'banner', d.id));
+    });
+
+    await batch.commit();
+    console.log('Database cleared completely (except users)!');
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, 'all-except-users');
+    throw err;
   }
 };
