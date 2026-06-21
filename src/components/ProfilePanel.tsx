@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { User, Product } from '../types';
-import { Settings, Save, Lock, User as UserIcon, Shield, Camera, Edit2, Trash2 } from 'lucide-react';
+import { Settings, Save, Lock, User as UserIcon, Shield, Camera, Edit2, Trash2, LogOut } from 'lucide-react';
 
 interface ProfilePanelProps {
   currentUser: User;
@@ -13,6 +13,8 @@ interface ProfilePanelProps {
   onUpdateProfile: (updatedData: Partial<User>) => void;
   onEditProduct: (product: Product) => void;
   onDeleteProduct: (productId: number) => void;
+  onLogout?: () => void;
+  onGoToTab?: (tab: 'home' | 'history' | 'profile' | 'developer' | 'upload' | 'chats' | 'stores') => void;
 }
 
 export const ProfilePanel: React.FC<ProfilePanelProps> = ({
@@ -21,6 +23,8 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({
   onUpdateProfile,
   onEditProduct,
   onDeleteProduct,
+  onLogout,
+  onGoToTab,
 }) => {
   const [username, setUsername] = useState(currentUser.username);
   const [password, setPassword] = useState('');
@@ -162,6 +166,32 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({
           </button>
 
         </form>
+
+        {(currentUser.role === 'developer' || currentUser.role === 'admin') && onGoToTab && (
+          <div className="pt-2 border-t border-zinc-500/10">
+            <button
+              type="button"
+              onClick={() => onGoToTab('developer')}
+              className="w-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/20 py-2.5 rounded-xl font-extrabold text-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-amber-500/5"
+            >
+              <Shield size={13} className="fill-current" />
+              MENU DEVELOPER PANEL
+            </button>
+          </div>
+        )}
+
+        {onLogout && (
+          <div className="pt-2 border-t border-zinc-850">
+            <button
+              type="button"
+              onClick={onLogout}
+              className="w-full bg-red-950/20 hover:bg-red-950/40 text-red-400 hover:text-red-300 border border-red-900/30 py-2.5 rounded-xl font-extrabold text-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <LogOut size={13} />
+              Keluar dari Akun Saya
+            </button>
+          </div>
+        )}
       </div>
 
       {/* RIGHT COLUMN: LIST AND EDIT MY PRODUCTS (SOLVES "tidak bisa edit jualan kitaa") */}

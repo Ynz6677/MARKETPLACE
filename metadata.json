@@ -1,5 +1,5 @@
 {
-  "name": "SANS VICTIM Marketplace",
+  "name": "WAST Marketplace",
   "description": "Premium games and items marketplace with live systematic chats, image sliders, transaction handshakes, and developer administration panel.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

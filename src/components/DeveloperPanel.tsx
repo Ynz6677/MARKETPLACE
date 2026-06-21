@@ -4,8 +4,8 @@
  */
 
 import React, { useState } from 'react';
-import { User, Product, Transaction, ChatMessage } from '../types';
-import { Shield, Eye, Trash2, CheckCircle2, UserCheck, Tag, ShoppingCart, RefreshCw, MessageSquare, AlertCircle } from 'lucide-react';
+import { User, Product, Transaction, ChatMessage, BannerConfig } from '../types';
+import { Shield, Eye, Trash2, CheckCircle2, UserCheck, Tag, ShoppingCart, RefreshCw, MessageSquare, AlertCircle, Image as ImageIcon, Coins } from 'lucide-react';
 
 interface DeveloperPanelProps {
   currentUser: User;
@@ -19,9 +19,12 @@ interface DeveloperPanelProps {
   onDeleteProduct: (productId: number) => void;
   onMonitorChatSession: (chatId: string) => void;
   onToggleUserBan: (userId: string) => void;
+  banner: BannerConfig[];
+  onUpdateBanner: (banner: BannerConfig | BannerConfig[]) => void;
+  onUpdateUserBalance: (userId: string, balance: number) => void;
 }
 
-type DevTab = 'users' | 'products' | 'transactions' | 'chats';
+type DevTab = 'users' | 'products' | 'transactions' | 'chats' | 'banner' | 'branding';
 
 export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
   currentUser,
@@ -35,10 +38,53 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
   onDeleteProduct,
   onMonitorChatSession,
   onToggleUserBan,
+  banner,
+  onUpdateBanner,
+  onUpdateUserBalance,
 }) => {
   const [activeTab, setActiveTab] = useState<DevTab>('users');
   const [userBadgeInputs, setUserBadgeInputs] = useState<{ [userId: string]: string }>({});
+  const [userBalanceInputs, setUserBalanceInputs] = useState<{ [userId: string]: string }>({});
   const [searchUserQuery, setSearchUserQuery] = useState('');
+
+  // Local state for editing multiple banners
+  const [localBanners, setLocalBanners] = useState<BannerConfig[]>(banner || []);
+  const [selectedBannerId, setSelectedBannerId] = useState<string>('');
+
+  // Keep local banners in sync with prop updates when they change from DB
+  React.useEffect(() => {
+    if (banner && banner.length > 0) {
+      setLocalBanners(banner);
+      if (!selectedBannerId || !banner.some(b => b.id === selectedBannerId)) {
+        setSelectedBannerId(banner[0].id);
+      }
+    }
+  }, [banner]);
+
+  const activeSelectedBanner = localBanners.find(b => b.id === selectedBannerId) || localBanners[0];
+
+  const updateActiveBannerField = (field: keyof BannerConfig, value: string) => {
+    if (!activeSelectedBanner) return;
+    setLocalBanners(prev => prev.map(b => {
+      if (b.id === activeSelectedBanner.id) {
+        return { ...b, [field]: value };
+      }
+      return b;
+    }));
+  };
+
+  const handleBannerImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          updateActiveBannerField('imageUrl', event.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const isVideoUrl = (src?: string | null) => {
     return src?.startsWith('data:video/') || src?.match(/\.(mp4|webm|ogg|mov|mkv|3gp)(\?.*)?$/i);
@@ -157,6 +203,23 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
         >
           Monitor Chat ({conversations.length})
         </button>
+        <button
+          onClick={() => setActiveTab('banner')}
+          className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold transition-all shrink-0 ${
+            activeTab === 'banner' ? 'bg-primary text-white font-bold' : 'bg-zinc-850 text-zinc-450 hover:text-white'
+          }`}
+        >
+          Atur Banner Iklan
+        </button>
+        <button
+          onClick={() => setActiveTab('branding')}
+          className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold transition-all shrink-0 ${
+            activeTab === 'branding' ? 'bg-primary text-white font-bold' : 'bg-zinc-850 text-zinc-450 hover:text-white'
+          }`}
+        >
+          Branding & Custom Logo
+        </button>
+
       </div>
 
       {/* TAB CONTENT 1: USERS */}
@@ -199,7 +262,16 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
                             </span>
                           )}
                         </div>
-                        <span className="text-[8px] text-zinc-500 font-bold uppercase leading-none">Role: {u.role}</span>
+                        <div className="space-y-1 mt-0.5">
+                          <span className="text-[8px] text-zinc-500 font-bold uppercase leading-none block">Role: {u.role}</span>
+                          {u.email ? (
+                            <span className="text-[9.5px] text-[#39a0ff] font-extrabold lowercase flex items-center gap-1">
+                              <span>✉</span> <span className="underline select-all">{u.email}</span>
+                            </span>
+                          ) : (
+                            <span className="text-[9px] text-zinc-600 font-bold italic block">✉ Belum ada email</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     {/* Role labels */}
@@ -284,10 +356,11 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-zinc-900 text-zinc-400 border-b border-zinc-800">
-                  <th className="p-3 font-semibold">User</th>
+                  <th className="p-3 font-semibold">User / ID</th>
+                  <th className="p-3 font-semibold">Email / Kontak</th>
                   <th className="p-3 font-semibold">Role Utama</th>
                   <th className="p-3 font-semibold">Badge Tambahan (Custom Role)</th>
-                  <th className="p-3 font-semibold text-center">Verified Centang Biru</th>
+                  <th className="p-3 font-semibold text-center">Verified</th>
                   <th className="p-3 font-semibold text-center">Atur / Aksi</th>
                 </tr>
               </thead>
@@ -301,6 +374,7 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
                         </div>
                         <div className="flex flex-col min-w-0">
                           <span className={`truncate ${u.isBanned ? 'line-through text-red-500' : ''}`}>{u.username}</span>
+                          <span className="text-[9px] text-zinc-600 font-mono select-all">ID: {u.id}</span>
                           {u.isBanned && (
                             <span className="text-[8px] text-red-500 font-extrabold uppercase bg-red-950/40 px-1 py-0.2 rounded border border-red-900/30 w-fit mt-0.5 animate-pulse">
                               Banned
@@ -308,6 +382,19 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
                           )}
                         </div>
                       </div>
+                    </td>
+                    <td className="p-3">
+                      {u.email ? (
+                        <div className="flex flex-col">
+                          <span className="text-[#39a0ff] hover:underline cursor-pointer select-all font-semibold lowercase font-mono text-[11px]">
+                            {u.email}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-zinc-600 font-medium italic text-[10px]">
+                          Belum dicantumkan
+                        </span>
+                      )}
                     </td>
                     <td className="p-3 uppercase text-[9px] font-bold">
                       {u.role === 'developer' && (
@@ -321,7 +408,7 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
                         </span>
                       )}
                       {u.role === 'seller' && (
-                        <span className="px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-450 border border-emerald-500/20">
+                        <span className="px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-440 border border-emerald-500/20">
                           {u.role}
                         </span>
                       )}
@@ -608,6 +695,476 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
                 );
               })
             )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB CONTENT 5: BANNER AD ADVERTISING */}
+      {activeTab === 'banner' && (
+        <div className="space-y-4 bg-zinc-950/80 p-4 rounded-xl border border-zinc-900">
+          <div className="flex items-center gap-2">
+            <ImageIcon className="text-primary" size={18} />
+            <h3 className="font-bold text-sm text-zinc-100 uppercase tracking-tight">Atur Tampilan Multi-Banner Promosi Bergeser (SINKRON REALTIME)</h3>
+          </div>
+          <p className="text-[10.5px] text-zinc-400 font-medium leading-relaxed">
+            Sebagai Developer, anda bisa mengelola lebih dari satu banner. Banner-banner ini akan otomatis berslide / bergeser di halaman beranda utama pembeli secara realtime dengan animasi menarik.
+          </p>
+
+          {/* Banner List Selector Panel */}
+          <div className="bg-zinc-900/40 p-3.5 rounded-xl border border-zinc-900 space-y-3">
+            <span className="block text-[10.5px] uppercase font-black text-amber-500 tracking-wider">📁 Daftar Banner Aktif</span>
+            <div className="flex flex-wrap gap-2">
+              {localBanners.map((p, idx) => (
+                <div
+                  key={p.id}
+                  onClick={() => setSelectedBannerId(p.id)}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-2xl border transition-all cursor-pointer ${
+                    p.id === activeSelectedBanner?.id
+                      ? 'bg-primary/10 border-primary text-white font-extrabold'
+                      : 'bg-zinc-950 border-zinc-850 text-zinc-450 hover:text-zinc-200'
+                  }`}
+                >
+                  <span className="text-[10.5px] font-bold">
+                    {idx + 1}. {p.title || '(Tanpa Judul)'}
+                  </span>
+                  {localBanners.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const updated = localBanners.filter(b => b.id !== p.id);
+                        setLocalBanners(updated);
+                        if (activeSelectedBanner?.id === p.id) {
+                          setSelectedBannerId(updated[0]?.id || '');
+                        }
+                      }}
+                      className="p-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-md transition-all active:scale-95 cursor-pointer"
+                      title="Hapus Banner"
+                    >
+                      <Trash2 size={11} />
+                    </button>
+                  )}
+                </div>
+              ))}
+
+              <button
+                type="button"
+                onClick={() => {
+                  const newId = `banner_${Date.now()}`;
+                  const newB: BannerConfig = {
+                    id: newId,
+                    title: 'PROMO EXCLUSIVE BARU',
+                    subtitle: 'Nikmati bonus top up saldo dompet game kesayangan Anda up to 10% instant tanpa antri.',
+                    imageUrl: '',
+                    bgColor: '#1e3a8a',
+                    accentColor: '#3b82f6',
+                    buttonText: 'Beli Sekarang',
+                    buttonLink: '#'
+                  };
+                  const updated = [...localBanners, newB];
+                  setLocalBanners(updated);
+                  setSelectedBannerId(newId);
+                }}
+                className="px-3.5 py-2 rounded-2xl bg-zinc-950 hover:bg-zinc-800 border border-green-500/20 text-green-400 hover:text-green-300 transition-all font-black text-[10px] cursor-pointer"
+              >
+                + Tambah Banner Baru
+              </button>
+            </div>
+          </div>
+
+          {activeSelectedBanner && (
+            <>
+              {/* Quick Example Presets (Solves: "dan beri 1 contoh banner") */}
+              <div className="bg-zinc-900/60 p-3 rounded-xl border border-zinc-900 space-y-2">
+                <span className="block text-[9.5px] uppercase font-black text-amber-500 tracking-wider">⚡ Terapkan Preset Template pada Banner Terpilih</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {[
+                    {
+                      title: 'FLASH SALE ROBUX 100K POCKET',
+                      subtitle: 'Robux Legal & Aman via Gamepass, rate tertinggi! Pengiriman instan & otomatis sekarang juga.',
+                      imageUrl: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=1200',
+                      bgColor: '#7c2d12',
+                      accentColor: '#f97316',
+                      buttonText: 'Beli Robux Sekarang',
+                      buttonLink: '#',
+                      label: 'Robux Sale'
+                    },
+                    {
+                      title: 'PREMIUM GODLY MM2 ITEMS',
+                      subtitle: 'Weapon Godly & Ancient termurah se-Indonesia! Menangkan matches dengan pedang kosmetik elite.',
+                      imageUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200',
+                      bgColor: '#064e3b',
+                      accentColor: '#10b981',
+                      buttonText: 'Mulai Cari Pedang',
+                      buttonLink: '#',
+                      label: 'Cosmetics MM2'
+                    },
+                    {
+                      title: 'DIAMOND MLBB FAST HANDSHAKE',
+                      subtitle: 'Top up Instant Diamond Mobile Legends rate VIP Reseller, jaminan cashback saldo dompet!',
+                      imageUrl: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=1200',
+                      bgColor: '#1e3a8a',
+                      accentColor: '#3b82f6',
+                      buttonText: 'Top Up MLBB',
+                      buttonLink: '#',
+                      label: 'MLBB diamonds'
+                    }
+                  ].map((p, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        setLocalBanners(prev => prev.map(b => {
+                          if (b.id === activeSelectedBanner.id) {
+                            return {
+                              ...b,
+                              title: p.title,
+                              subtitle: p.subtitle,
+                              imageUrl: p.imageUrl,
+                              bgColor: p.bgColor,
+                              accentColor: p.accentColor,
+                              buttonText: p.buttonText,
+                              buttonLink: p.buttonLink
+                            };
+                          }
+                          return b;
+                        }));
+                      }}
+                      className="p-2 rounded-lg bg-zinc-950 hover:bg-zinc-850 text-left border border-zinc-850 hover:border-primary/40 transition-all text-[10px] space-y-1 cursor-pointer active:scale-95 text-zinc-300 hover:text-white"
+                    >
+                      <span className="font-extrabold uppercase text-[8px] text-amber-500 bg-amber-500/10 px-1 py-0.2 rounded inline-block mb-1">{p.label}</span>
+                      <p className="font-black truncate block">{p.title}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Form Fields container */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[10px] uppercase font-bold text-zinc-500 mb-1">Judul Banner Promosi</label>
+                    <input
+                      type="text"
+                      value={activeSelectedBanner.title}
+                      onChange={(e) => updateActiveBannerField('title', e.target.value)}
+                      className="w-full bg-zinc-900 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-zinc-100 outline-none focus:border-primary font-extrabold"
+                      placeholder="POPOLNI CRYPTO"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] uppercase font-bold text-zinc-500 mb-1">Keterangan / Deskripsi Iklan</label>
+                    <textarea
+                      value={activeSelectedBanner.subtitle}
+                      onChange={(e) => updateActiveBannerField('subtitle', e.target.value)}
+                      rows={2}
+                      className="w-full bg-zinc-900 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-zinc-100 outline-none focus:border-primary font-semibold"
+                      placeholder="Beli Saldo Crypto & Diamond Instan, Bonus up to 5%! WAST"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] uppercase font-bold text-zinc-500 mb-1">Unggah Foto Banner Promosi (ATAU PASTE URL)</label>
+                    
+                    <div className="space-y-2">
+                      <div className="relative group rounded-2xl bg-zinc-900 border-2 border-dashed border-zinc-850 hover:border-primary/50 flex flex-col items-center justify-center p-4 cursor-pointer overflow-hidden transition-all text-center min-h-[90px]">
+                        {activeSelectedBanner.imageUrl ? (
+                          <div className="flex items-center gap-3 w-full">
+                            <img src={activeSelectedBanner.imageUrl} className="w-16 h-10 object-cover rounded-lg border border-zinc-850 shrink-0" alt="" />
+                            <div className="flex-1 text-left min-w-0">
+                              <p className="text-[10px] font-bold text-zinc-300 truncate font-sans">Foto Terpilih</p>
+                              <p className="text-[8px] text-zinc-500 font-mono truncate">{activeSelectedBanner.imageUrl.startsWith('data:') ? 'Base64 Gambar Upload' : activeSelectedBanner.imageUrl}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateActiveBannerField('imageUrl', '');
+                              }}
+                              className="px-2.5 py-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-450 border border-red-900/40 text-[9px] font-black rounded-xl transition-all"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center">
+                            <span className="text-zinc-400 text-xs font-extrabold mb-1">Pilih atau Seret Foto (.jpg, .png)</span>
+                            <span className="text-[9px] text-zinc-600 font-bold">Ketuk di sini untuk upload foto dari galeri</span>
+                          </div>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleBannerImageUpload}
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                          title="Upload Foto Banner"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="h-[1px] bg-zinc-900 flex-1" />
+                        <span className="text-[8.5px] text-zinc-600 font-bold uppercase shrink-0">Atau Gunakan Link URL</span>
+                        <div className="h-[1px] bg-zinc-900 flex-1" />
+                      </div>
+
+                      <input
+                        type="text"
+                        value={activeSelectedBanner.imageUrl.startsWith('data:') ? '' : activeSelectedBanner.imageUrl}
+                        onChange={(e) => updateActiveBannerField('imageUrl', e.target.value)}
+                        className="w-full bg-zinc-900 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none focus:border-primary font-mono text-[11px]"
+                        placeholder="https://images.unsplash.com..."
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-zinc-500 mb-1">Teks Tombol Aksi</label>
+                      <input
+                        type="text"
+                        value={activeSelectedBanner.buttonText}
+                        onChange={(e) => updateActiveBannerField('buttonText', e.target.value)}
+                        className="w-full bg-zinc-900 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none focus:border-primary font-bold"
+                        placeholder="Popolnit balance"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-zinc-500 mb-1">Link Tombol (URL/#)</label>
+                      <input
+                        type="text"
+                        value={activeSelectedBanner.buttonLink}
+                        onChange={(e) => updateActiveBannerField('buttonLink', e.target.value)}
+                        className="w-full bg-zinc-900 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none focus:border-primary font-mono text-[11px]"
+                        placeholder="#"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-zinc-500 mb-1">Set Warna Background (Wheel)</label>
+                      <div className="flex gap-2 items-center bg-zinc-900 border border-zinc-850 rounded-2xl px-2.5 py-1.5 focus-within:border-primary transition-all">
+                        <div className="relative w-8 h-8 rounded-full overflow-hidden border border-zinc-700 cursor-pointer shadow-md flex items-center justify-center shrink-0 bg-gradient-to-tr from-red-500 via-yellow-400 via-green-500 via-blue-500 to-purple-500">
+                          <input
+                            type="color"
+                            value={activeSelectedBanner.bgColor || '#EA580C'}
+                            onChange={(e) => updateActiveBannerField('bgColor', e.target.value)}
+                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                            title="Atur Warna dengan Color Wheel"
+                          />
+                          <div className="w-4 h-4 rounded-full border border-white shadow-sm" style={{ backgroundColor: activeSelectedBanner.bgColor || '#EA580C' }} />
+                        </div>
+                        <input
+                          type="text"
+                          value={activeSelectedBanner.bgColor || '#EA580C'}
+                          onChange={(e) => updateActiveBannerField('bgColor', e.target.value)}
+                          className="w-full bg-transparent text-xs text-zinc-200 outline-none font-mono uppercase"
+                          placeholder="#EA580C"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-zinc-500 mb-1">Warna Tombol Aksi (Wheel)</label>
+                      <div className="flex gap-2 items-center bg-zinc-900 border border-zinc-850 rounded-2xl px-2.5 py-1.5 focus-within:border-primary transition-all">
+                        <div className="relative w-8 h-8 rounded-full overflow-hidden border border-zinc-700 cursor-pointer shadow-md flex items-center justify-center shrink-0 bg-gradient-to-tr from-red-500 via-yellow-400 via-green-500 via-blue-500 to-purple-500">
+                          <input
+                            type="color"
+                            value={activeSelectedBanner.accentColor || '#F59E0B'}
+                            onChange={(e) => updateActiveBannerField('accentColor', e.target.value)}
+                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                            title="Atur Warna dengan Color Wheel"
+                          />
+                          <div className="w-4 h-4 rounded-full border border-white shadow-sm" style={{ backgroundColor: activeSelectedBanner.accentColor || '#F59E0B' }} />
+                        </div>
+                        <input
+                          type="text"
+                          value={activeSelectedBanner.accentColor || '#F59E0B'}
+                          onChange={(e) => updateActiveBannerField('accentColor', e.target.value)}
+                          className="w-full bg-transparent text-xs text-zinc-200 outline-none font-mono uppercase"
+                          placeholder="#F59E0B"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      onUpdateBanner(localBanners);
+                    }}
+                    className="w-full mt-2 py-2.5 bg-primary click-animation text-white text-xs font-black uppercase rounded-2xl flex items-center justify-center gap-2 hover:bg-primary-hover transition-all shadow-lg shadow-primary/10 cursor-pointer"
+                  >
+                    <RefreshCw size={13} className="animate-spin" style={{ animationDuration: '4s' }} />
+                    Simpan & Sinkronkan Semua Banner Realtime ({localBanners.length} Banner)
+                  </button>
+                </div>
+
+                {/* PREVIEW CONTAINER */}
+                <div className="space-y-3">
+                  <span className="block text-[10px] uppercase font-bold text-zinc-500">Live Preview Hasil Banner Promosi Aktif:</span>
+                  <div
+                    className="relative rounded-3xl p-5 overflow-hidden flex flex-col justify-between h-[180px] border border-zinc-800 shadow-2xl bg-cover bg-center"
+                    style={{
+                      backgroundColor: activeSelectedBanner.bgColor || '#EA580C',
+                      backgroundImage: activeSelectedBanner.imageUrl ? `url(${activeSelectedBanner.imageUrl})` : 'none',
+                    }}
+                  >
+                    {!activeSelectedBanner.imageUrl && (
+                      <div
+                        className="absolute inset-0 bg-gradient-to-tr opacity-25"
+                        style={{ backgroundImage: `linear-gradient(to top right, ${activeSelectedBanner.bgColor}, ${activeSelectedBanner.accentColor})` }}
+                      />
+                    )}
+                    
+                    {activeSelectedBanner.imageUrl && (
+                      <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                    )}
+                    
+                    <div className="z-10 mt-auto">
+                      <h1 className="text-xs sm:text-sm font-black text-white leading-tight uppercase tracking-tight select-none">
+                        {activeSelectedBanner.title || 'POPOLNI CRYPTO'}
+                      </h1>
+                      <p className="text-[8px] sm:text-[9px] text-zinc-200 mt-1 uppercase font-semibold tracking-wide select-none leading-tight">
+                        {activeSelectedBanner.subtitle || 'Beli Saldo Crypto & Diamond Instan, Bonus up to 10%!'}
+                      </p>
+                    </div>
+
+                    <div className="z-10 self-start mt-1.5 animate-pulse">
+                      <button
+                        className="px-3 py-1 rounded-full text-[9px] font-extrabold text-white transition-all duration-300 hover:scale-103 cursor-pointer shadow-md select-none uppercase tracking-wider"
+                        style={{ backgroundColor: activeSelectedBanner.accentColor || '#F59E0B' }}
+                      >
+                        {activeSelectedBanner.buttonText || 'Popolnit balance'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'branding' && (
+        <div className="space-y-5 bg-zinc-950/80 p-4 rounded-xl border border-zinc-900">
+          <div className="flex items-center gap-2">
+            <ImageIcon className="text-primary" size={18} />
+            <h3 className="font-bold text-sm text-zinc-100 uppercase tracking-tight">Kustomisasi Branding & Logo Platform</h3>
+          </div>
+          <p className="text-[10.5px] text-zinc-400 font-medium leading-relaxed">
+            Anda bertanya: <strong className="text-primary font-bold">"Logo nya emang gabisa dari foto saya?"</strong> Tentu saja <strong className="text-[#00e5ff] font-bold">SANGAT BISA!</strong> Di halaman ini, Anda dapat mengunggah foto logo Anda (.PNG, .JPG) atau menyetel tautan gambar. Sistem akan otomatis mengganti logo beruang WAST di seluruh website secara instan!
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+            {/* Left Column: Configuration Form */}
+            <div className="bg-zinc-900/40 p-4 rounded-2xl border border-zinc-900 space-y-4">
+              <div>
+                <label className="block text-[10.5px] font-black uppercase text-zinc-450 tracking-wider mb-2">
+                  Metode 1: Unggah Foto Dari Komputer / HP
+                </label>
+                <div className="relative group cursor-pointer border border-dashed border-zinc-800 hover:border-[#0084ff]/50 bg-zinc-950/70 p-5 rounded-xl text-center transition-all">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          if (event.target?.result) {
+                            const val = event.target.result as string;
+                            localStorage.setItem('wast_custom_logo', val);
+                            window.dispatchEvent(new Event('wast_logo_changed'));
+                          }
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                  />
+                  <div className="flex flex-col items-center justify-center space-y-2 pointer-events-none">
+                    <div className="p-2 bg-[#0084ff]/10 text-primary rounded-lg">
+                      <ImageIcon size={20} />
+                    </div>
+                    <span className="text-[11px] text-zinc-300 font-black">Klik atau Seret Foto Disini</span>
+                    <span className="text-[9px] text-zinc-500 font-bold">PNG, JPG, JPEG atau GIF (Rekomendasi Kotak/Square)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative flex py-1.5 items-center">
+                <div className="flex-grow border-t border-zinc-905"></div>
+                <span className="flex-shrink mx-3 text-[9px] font-bold text-zinc-650 uppercase tracking-widest">ATAU</span>
+                <div className="flex-grow border-t border-zinc-905"></div>
+              </div>
+
+              <div>
+                <label className="block text-[10.5px] font-black uppercase text-zinc-450 tracking-wider mb-1.5">
+                  Metode 2: Tempel Tautan Gambar (Image URL)
+                </label>
+                <input
+                  type="text"
+                  placeholder="https://contoh.com/gambar-logo-anda.png"
+                  className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none focus:border-primary font-semibold"
+                  onChange={(e) => {
+                    const val = e.target.value.trim();
+                    if (val) {
+                      localStorage.setItem('wast_custom_logo', val);
+                      window.dispatchEvent(new Event('wast_logo_changed'));
+                    }
+                  }}
+                  defaultValue={localStorage.getItem('wast_custom_logo') || ''}
+                />
+              </div>
+
+              <div className="pt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    localStorage.removeItem('wast_custom_logo');
+                    window.dispatchEvent(new Event('wast_logo_changed'));
+                  }}
+                  className="w-full py-2 bg-zinc-950 hover:bg-zinc-850 text-zinc-400 hover:text-white text-[10.5px] font-black uppercase rounded-xl border border-zinc-850 cursor-pointer transition-all active:scale-95 text-center flex items-center justify-center gap-1.5"
+                >
+                  Reset Logo ke Bawaan
+                </button>
+              </div>
+            </div>
+
+            {/* Right Column: Preview Panel */}
+            <div className="bg-zinc-900/40 p-4 rounded-2xl border border-zinc-900 flex flex-col items-center justify-center text-center space-y-4">
+              <span className="text-[10px] uppercase font-black text-amber-500 tracking-wider">👀 Preview Tampilan Logo Anda</span>
+              
+              <div className="p-6 bg-[#0c0c0e] border border-zinc-850 rounded-3xl shadow-2xl flex flex-col items-center justify-center w-full max-w-xs aspect-square">
+                {/* Dynamically loads based on updated localStorage */}
+                <div className="relative p-2.5 bg-zinc-900 border border-zinc-800 rounded-2xl mb-4 flex items-center justify-center">
+                  <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
+                    {localStorage.getItem('wast_custom_logo') ? (
+                      <img
+                        src={localStorage.getItem('wast_custom_logo') || ''}
+                        alt="Preview Logo"
+                        className="w-full h-full object-contain rounded-xl p-0.5"
+                        onError={(e) => {
+                          (e.target as any).src = "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=200";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center rounded-xl bg-zinc-950 border border-[#0084ff]/20">
+                        <span className="text-[10px] text-zinc-500 font-bold">Vector Bear</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="text-xs font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-400">
+                  {localStorage.getItem('wast_custom_logo') ? 'Logo Unggulan Anda' : 'Logo Beruang WAST (Default)'}
+                </div>
+                <p className="text-[9px] text-zinc-500 font-semibold mt-1">
+                  Logo ini akan menggantikan semua ikon di login screen, navbar, splash loading, dan footer.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -4,8 +4,8 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Product, Transaction, ChatMessage } from './types';
-import { SVGLogo } from './components/SVGLogo';
+import { User, Product, Transaction, ChatMessage, BannerConfig } from './types';
+import { SVGLogo, WastWordmark } from './components/SVGLogo';
 import { AuthScreen } from './components/AuthScreen';
 import { Navbar } from './components/Navbar';
 import { ProductDetail } from './components/ProductDetail';
@@ -14,18 +14,69 @@ import { DeveloperPanel } from './components/DeveloperPanel';
 import { HistoryPanel } from './components/HistoryPanel';
 import { ProfilePanel } from './components/ProfilePanel';
 import { UserStorefrontModal } from './components/UserStorefrontModal';
+import { PromoSlider } from './components/PromoSlider';
 import {
   INITIAL_USERS,
   INITIAL_PRODUCTS,
   INITIAL_TRANSACTIONS,
   INITIAL_CHATS,
 } from './data/mockData';
-import { Sparkles, ShoppingBag, ShieldAlert, BadgeCheck, MessageSquare, Plus, CheckCircle, XCircle, AlertCircle, Search, Users } from 'lucide-react';
+import {
+  syncUsers,
+  syncProducts,
+  syncTransactions,
+  syncChats,
+  saveUser,
+  saveMultipleUsers,
+  saveProduct,
+  saveMultipleProducts,
+  deleteProductDoc,
+  saveTransaction,
+  saveMultipleTransactions,
+  saveChat,
+  saveMultipleChats,
+  syncBanner,
+  saveBanner
+} from './firebase';
+import { Sparkles, ShoppingBag, ShieldAlert, BadgeCheck, MessageSquare, Plus, CheckCircle, XCircle, AlertCircle, Search, Users, SlidersHorizontal, Heart, Mail, Headphones } from 'lucide-react';
 
 export default function App() {
   // Splash Screen Screen Loader
   const [isSplashLoading, setIsSplashLoading] = useState(true);
   const [splashProgress, setSplashProgress] = useState(0);
+
+  const playIntroSound = () => {
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      
+      const playTone = (freq: number, startTime: number, duration: number, type: OscillatorType = 'sine', gainVal = 0.1) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, startTime);
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(gainVal, startTime + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      };
+
+      const now = ctx.currentTime;
+      // Synthesize a beautiful premium store startup sound
+      playTone(261.63, now, 0.45, 'sine', 0.08); // C4
+      playTone(329.63, now + 0.12, 0.45, 'sine', 0.08); // E4
+      playTone(392.00, now + 0.24, 0.45, 'sine', 0.08); // G4
+      playTone(523.25, now + 0.36, 0.55, 'sine', 0.1); // C5
+      playTone(659.25, now + 0.48, 0.95, 'sine', 0.12); // E5
+      playTone(987.77, now + 0.60, 1.45, 'sine', 0.06); // B5 digital sparkles
+    } catch (e) {
+      console.warn("Audio context restricted by browser:", e);
+    }
+  };
 
   // Core Collections persistent in localStorage
   const [users, setUsers] = useState<User[]>([]);
@@ -35,6 +86,7 @@ export default function App() {
 
   // Auth User Session State
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [banner, setBanner] = useState<BannerConfig[]>([]);
 
   const isVideoVal = (src?: string | null) => {
     return src?.startsWith('data:video/') || src?.match(/\.(mp4|webm|ogg|mov|mkv|3gp)(\?.*)?$/i);
@@ -71,12 +123,17 @@ export default function App() {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [sortBy, setSortBy] = useState<'latest' | 'cheapest' | 'expensive'>('latest');
+  const [isPriceFilterOpen, setIsPriceFilterOpen] = useState(false);
+  const [likedProducts, setLikedProducts] = useState<number[]>([1, 4, 7]);
 
   // Custom Modal Confirmation State for Logout
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Custom Modal State for viewing storefront
   const [selectedStorefrontUserId, setSelectedStorefrontUserId] = useState<string | null>(null);
+
+  // Popup Search Modal state
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   // System Preference Adaptive Theme state
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -88,49 +145,30 @@ export default function App() {
 
   // Setup OS system theme listener
   useEffect(() => {
-    const saved = localStorage.getItem('theme-preference');
-    let activeDark = isDarkMode;
-    if (saved) {
-      activeDark = (saved === 'dark');
-      setIsDarkMode(activeDark);
-    } else {
-      const query = window.matchMedia('(prefers-color-scheme: dark)');
-      activeDark = query.matches;
-      setIsDarkMode(activeDark);
-    }
+    const query = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: MediaQueryListEvent) => {
+      const saved = localStorage.getItem('theme-preference');
+      if (!saved) {
+        setIsDarkMode(e.matches);
+      }
+    };
+    query.addEventListener('change', handler);
+    return () => query.removeEventListener('change', handler);
+  }, []);
 
-    if (activeDark) {
+  // Sync document class with isDarkMode state
+  useEffect(() => {
+    if (isDarkMode) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-
-    const query = window.matchMedia('(prefers-color-scheme: dark)');
-    const handler = (e: MediaQueryListEvent) => {
-      const manualSaved = localStorage.getItem('theme-preference');
-      if (!manualSaved) {
-        setIsDarkMode(e.matches);
-        if (e.matches) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
-      }
-    };
-
-    query.addEventListener('change', handler);
-    return () => query.removeEventListener('change', handler);
   }, [isDarkMode]);
 
   const handleToggleTheme = () => {
     setIsDarkMode((prev) => {
       const nextVal = !prev;
       localStorage.setItem('theme-preference', nextVal ? 'dark' : 'light');
-      if (nextVal) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
       return nextVal;
     });
   };
@@ -145,6 +183,7 @@ export default function App() {
   const [formDiscord, setFormDiscord] = useState('');
   const [formWa, setFormWa] = useState('');
   const [formImages, setFormImages] = useState<string[]>([]);
+  const [sellerRegEmail, setSellerRegEmail] = useState('');
 
   // Buying Modal configuration states
   const [activeBuyingProduct, setActiveBuyingProduct] = useState<Product | null>(null);
@@ -158,41 +197,69 @@ export default function App() {
     setTimeout(() => setActiveNotification(null), 4000);
   };
 
-  // Load state from localStorage on Mount
+  // Load state from local storage and real-time streams on Mount
   useEffect(() => {
-    const localUsers = localStorage.getItem('sv_users');
-    const localProducts = localStorage.getItem('sv_products');
-    const localTxs = localStorage.getItem('sv_txs');
-    const localChats = localStorage.getItem('sv_chats');
+    // 1. Session current user in local storage persists
     const localUser = localStorage.getItem('sv_current_user');
-
-    if (localUsers) setUsers(JSON.parse(localUsers));
-    else {
-      setUsers(INITIAL_USERS);
-      localStorage.setItem('sv_users', JSON.stringify(INITIAL_USERS));
-    }
-
-    if (localProducts) setProducts(JSON.parse(localProducts));
-    else {
-      setProducts(INITIAL_PRODUCTS);
-      localStorage.setItem('sv_products', JSON.stringify(INITIAL_PRODUCTS));
-    }
-
-    if (localTxs) setTransactions(JSON.parse(localTxs));
-    else {
-      setTransactions(INITIAL_TRANSACTIONS);
-      localStorage.setItem('sv_txs', JSON.stringify(INITIAL_TRANSACTIONS));
-    }
-
-    if (localChats) setChats(JSON.parse(localChats));
-    else {
-      setChats(INITIAL_CHATS);
-      localStorage.setItem('sv_chats', JSON.stringify(INITIAL_CHATS));
-    }
-
     if (localUser) {
-      setCurrentUser(JSON.parse(localUser));
+      try {
+        setCurrentUser(JSON.parse(localUser));
+      } catch (e) {
+        console.error(e);
+      }
     }
+
+    // 2. Real-time synchronizations with Firestore
+    const unsubUsers = syncUsers((fetchedUsers) => {
+      if (fetchedUsers.length === 0) {
+        // Seed database if empty
+        saveMultipleUsers(INITIAL_USERS).catch(console.error);
+      } else {
+        setUsers(fetchedUsers);
+        // Refresh session user if logged in to fetch latest badges/ban status
+        if (localUser) {
+          try {
+            const parsed = JSON.parse(localUser) as User;
+            const fresh = fetchedUsers.find((u) => u.id === parsed.id);
+            if (fresh) {
+              setCurrentUser(fresh);
+              localStorage.setItem('sv_current_user', JSON.stringify(fresh));
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      }
+    });
+
+    const unsubProducts = syncProducts((fetchedProducts) => {
+      if (fetchedProducts.length === 0) {
+        saveMultipleProducts(INITIAL_PRODUCTS).catch(console.error);
+      } else {
+        setProducts(fetchedProducts);
+      }
+    });
+
+    const unsubTransactions = syncTransactions((fetchedTxs) => {
+      if (fetchedTxs.length === 0) {
+        saveMultipleTransactions(INITIAL_TRANSACTIONS).catch(console.error);
+      } else {
+        // Sort transactions by timestamp descending
+        setTransactions([...fetchedTxs].sort((a, b) => b.timestamp - a.timestamp));
+      }
+    });
+
+    const unsubChats = syncChats((fetchedChats) => {
+      if (fetchedChats.length === 0) {
+        saveMultipleChats(INITIAL_CHATS).catch(console.error);
+      } else {
+        setChats(fetchedChats);
+      }
+    });
+
+    const unsubBanner = syncBanner((fetchedBanner) => {
+      setBanner(fetchedBanner);
+    });
 
     // Dismiss splash screen loader progressively
     let progressVal = 0;
@@ -203,36 +270,68 @@ export default function App() {
         clearInterval(progressInterval);
         setIsSplashLoading(false);
       }
-    }, 30); // 30ms * 50 steps = 1500ms smooth loading animation
+    }, 15); // Faster load for responsive feeling
 
-    return () => clearInterval(progressInterval);
+    return () => {
+      unsubUsers();
+      unsubProducts();
+      unsubTransactions();
+      unsubChats();
+      unsubBanner();
+      clearInterval(progressInterval);
+    };
   }, []);
 
-  // Save values to localStorage when states change
+  // Save values to Firestore on state change (maintaining exactly backward-compatible void signature)
   const saveUsersToLocal = (newUsers: User[]) => {
     setUsers(newUsers);
-    localStorage.setItem('sv_users', JSON.stringify(newUsers));
+    newUsers.forEach((u) => {
+      const match = users.find((x) => x.id === u.id);
+      if (!match || JSON.stringify(match) !== JSON.stringify(u)) {
+        saveUser(u).catch(console.error);
+      }
+    });
   };
 
   const saveProductsToLocal = (newProducts: Product[]) => {
     setProducts(newProducts);
-    localStorage.setItem('sv_products', JSON.stringify(newProducts));
+    const deleted = products.filter((p) => !newProducts.some((np) => np.id === p.id));
+    deleted.forEach((dp) => {
+      deleteProductDoc(dp.id).catch(console.error);
+    });
+    newProducts.forEach((p) => {
+      const match = products.find((x) => x.id === p.id);
+      if (!match || JSON.stringify(match) !== JSON.stringify(p)) {
+        saveProduct(p).catch(console.error);
+      }
+    });
   };
 
   const saveTxsToLocal = (newTxs: Transaction[]) => {
     setTransactions(newTxs);
-    localStorage.setItem('sv_txs', JSON.stringify(newTxs));
+    newTxs.forEach((tx) => {
+      const match = transactions.find((x) => x.id === tx.id);
+      if (!match || JSON.stringify(match) !== JSON.stringify(tx)) {
+        saveTransaction(tx).catch(console.error);
+      }
+    });
   };
 
   const saveChatsToLocal = (newChats: ChatMessage[]) => {
     setChats(newChats);
-    localStorage.setItem('sv_chats', JSON.stringify(newChats));
+    newChats.forEach((chat) => {
+      const match = chats.find((x) => x.id === chat.id);
+      if (!match || JSON.stringify(match) !== JSON.stringify(chat)) {
+        saveChat(chat).catch(console.error);
+      }
+    });
   };
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
     localStorage.setItem('sv_current_user', JSON.stringify(user));
-    triggerToast(`Selamat datang kembali di SANS VICTIM, ${user.username}!`, 'success');
+    triggerToast(`Selamat datang kembali di WAST, ${user.username}!`, 'success');
+    playIntroSound();
   };
 
   const handleRegister = (newUser: User) => {
@@ -240,7 +339,8 @@ export default function App() {
     saveUsersToLocal(updated);
     setCurrentUser(newUser);
     localStorage.setItem('sv_current_user', JSON.stringify(newUser));
-    triggerToast(`Selamat datang di pasar SANS VICTIM, ${newUser.username}!`, 'success');
+    triggerToast(`Selamat datang di pasar WAST, ${newUser.username}!`, 'success');
+    playIntroSound();
   };
 
   const handleLogout = () => {
@@ -259,6 +359,34 @@ export default function App() {
 
     const updatedUsersList = users.map((u) => (u.id === currentUser.id ? updatedUser : u));
     saveUsersToLocal(updatedUsersList);
+  };
+
+  const handleRegisterAsSellerSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return;
+    if (!sellerRegEmail.trim()) {
+      triggerToast('Alamat email wajib diisi untuk mendaftar sebagai penjual!', 'error');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(sellerRegEmail.trim())) {
+      triggerToast('Format email tidak valid! Harap periksa kembali.', 'error');
+      return;
+    }
+
+    const updatedUser: User = {
+      ...currentUser,
+      role: 'seller',
+      email: sellerRegEmail.trim()
+    };
+
+    setCurrentUser(updatedUser);
+    localStorage.setItem('sv_current_user', JSON.stringify(updatedUser));
+
+    const updatedUsersList = users.map((u) => (u.id === currentUser.id ? updatedUser : u));
+    saveUsersToLocal(updatedUsersList);
+
+    triggerToast('Selamat! Akun Anda sukses terdaftar sebagai Penjual di WAST!', 'success');
   };
 
   // Product submission (Saves creation and also updates existing listings!)
@@ -327,7 +455,7 @@ export default function App() {
 
       const updated = [newProduct, ...products];
       saveProductsToLocal(updated);
-      triggerToast('Barang berhasil terlisting di pasar SANS VICTIM!', 'success');
+      triggerToast('Barang berhasil terlisting di pasar WAST!', 'success');
     }
 
     // Reset forms and return to home shop
@@ -631,6 +759,34 @@ export default function App() {
     triggerToast('Label badge kustom pengguna disimpan!', 'success');
   };
 
+  const handleUpdateUserBalance = (userId: string, newBalance: number) => {
+    const list = users.map((u) => {
+      if (u.id === userId) {
+        return { ...u, balance: newBalance };
+      }
+      return u;
+    });
+
+    if (currentUser?.id === userId) {
+      const updatedSess = { ...currentUser, balance: newBalance };
+      setCurrentUser(updatedSess);
+      localStorage.setItem('sv_current_user', JSON.stringify(updatedSess));
+    }
+
+    saveUsersToLocal(list);
+    triggerToast('Saldo dompet pengguna berhasil diubah!', 'success');
+  };
+
+  const handleUpdateBanner = async (newBanner: BannerConfig | BannerConfig[]) => {
+    try {
+      await saveBanner(newBanner);
+      triggerToast('Banner promosi iklan berhasil diperbarui secara realtime!', 'success');
+    } catch (e) {
+      console.error(e);
+      triggerToast('Gagal memperbarui banner promosi iklan.', 'error');
+    }
+  };
+
   const handleMonitorChat = (chatId: string) => {
     setOverrideDevChatId(chatId);
     setActiveTab('chats');
@@ -692,18 +848,32 @@ export default function App() {
       lastNotifiedMsgIdRef.current = lastMsg.id;
       
       if ('Notification' in window) {
-        if (Notification.permission === 'granted') {
-          new Notification('SANS VICTIM Marketplace 🔔', {
-            body: `${lastMsg.senderId === 'u1' ? 'Developer' : 'Pengguna'}: "${lastMsg.text}"`,
-          });
-        } else if (Notification.permission !== 'denied') {
-          Notification.requestPermission().then((permission) => {
-            if (permission === 'granted') {
-              new Notification('SANS VICTIM Marketplace 🔔', {
+        try {
+          if (Notification.permission === 'granted') {
+            try {
+              new Notification('WAST Marketplace 🔔', {
                 body: `${lastMsg.senderId === 'u1' ? 'Developer' : 'Pengguna'}: "${lastMsg.text}"`,
               });
+            } catch (err) {
+              console.warn('Standard Notification constructor failed. Relying on service worker or local toast instead.', err);
             }
-          });
+          } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission().then((permission) => {
+              if (permission === 'granted') {
+                try {
+                  new Notification('WAST Marketplace 🔔', {
+                    body: `${lastMsg.senderId === 'u1' ? 'Developer' : 'Pengguna'}: "${lastMsg.text}"`,
+                  });
+                } catch (err) {
+                  console.warn('Standard Notification constructor failed after permission granted.', err);
+                }
+              }
+            }).catch((e) => {
+              console.warn('Notification permission promise rejected:', e);
+            });
+          }
+        } catch (error) {
+          console.warn('HTML5 Notification check or execution failed gracefully:', error);
         }
       }
     }
@@ -711,8 +881,12 @@ export default function App() {
 
   useEffect(() => {
     // Request notification permission early on mount
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
+    try {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().catch(() => {});
+      }
+    } catch (error) {
+      console.warn('Failed to check/request initial Notification permission:', error);
     }
   }, []);
 
@@ -740,19 +914,19 @@ export default function App() {
   });
 
   const getProductSeller = (sellerId: string) => {
-    return users.find((u) => u.id === sellerId) || { id: sellerId, username: 'Seller SANS VICTIM', verified: true, customRole: 'Legendary' } as User;
+    return users.find((u) => u.id === sellerId) || { id: sellerId, username: 'Seller Resmi', verified: true, customRole: 'Legendary' } as User;
   };
 
   // Render Splash Screen proper logo intro
   if (isSplashLoading) {
     return (
-      <div className="fixed inset-0 z-50 bg-[#0c0c0e] flex flex-col items-center justify-center text-center">
-        <div className="relative animate-pulse max-w-sm flex flex-col items-center">
-          <SVGLogo size={120} className="mb-4" />
-          <h1 className="text-4xl font-extrabold tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-primary to-white">
-            SANS VICTIM
-          </h1>
-          <p className="text-xs text-zinc-500 font-bold tracking-widest uppercase mt-1">
+      <div className="fixed inset-0 z-50 bg-[#0c0c0e] flex flex-col items-center justify-center text-center animate-fade-in">
+        <div className="relative max-w-sm flex flex-col items-center p-6">
+          <div className="mb-6 flex items-center justify-center">
+            <SVGLogo size={80} variant="bear" />
+          </div>
+          <WastWordmark size="xl" className="mb-0.5" />
+          <p className="text-[10px] text-zinc-500 font-bold tracking-widest uppercase mt-2">
             Premium Games & Items Store
           </p>
           <div className="w-48 h-1.5 bg-zinc-850 rounded-full mt-6 overflow-hidden relative border border-zinc-800/50">
@@ -783,12 +957,14 @@ export default function App() {
         </div>
       )}
 
-      {/* HEADER NAVBAR WITH INTEGRATED SLIDING SEARCH BAR */}
+      {/* HEADER NAVBAR REPLICATING BAZARA BOT TOP BAR */}
       {currentUser && (
         <div className="sticky top-0 z-40 w-full shadow-xl">
           <Navbar
             currentUser={currentUser}
             notificationCount={unreadMessagesCount}
+            activeTab={activeTab}
+            activeProductId={activeProductId}
             onSearchChange={(q) => {
               setSearchQuery(q);
               setActiveTab('home');
@@ -801,49 +977,27 @@ export default function App() {
                 setEditingProduct(null);
               }
             }}
+            onBackClick={() => {
+              if (activeProductId) {
+                setActiveProductId(null);
+              } else {
+                setActiveTab('home');
+              }
+            }}
             onLogout={() => setShowLogoutConfirm(true)}
             isDarkMode={isDarkMode}
             onToggleTheme={handleToggleTheme}
           />
-
-          {/* SLIDING SEARCH BAR (POPS OUT FROM BEHIND THE NAVBAR) */}
-          {activeTab === 'home' && !activeProductId && (
-            <div 
-              className={`absolute left-1/2 -translate-x-1/2 z-30 w-[calc(100%-3rem)] max-w-[240px] transition-all duration-300 ease-out transform ${
-                isSearchVisible 
-                  ? 'translate-y-1.5 opacity-100 scale-100 pointer-events-auto' 
-                  : '-translate-y-full opacity-0 scale-95 pointer-events-none'
-              }`}
-              style={{ top: '100%' }}
-            >
-              <div className="bg-gradient-to-b from-amber-500 to-orange-600 border border-amber-400/40 rounded-b-2xl py-1.5 px-3.5 shadow-2xl flex items-center justify-between gap-2.5 ring-1 ring-amber-300/25">
-                <div className="flex items-center gap-2 flex-1">
-                  <Search className="text-white shrink-0" size={13} />
-                  <input
-                    type="text"
-                    placeholder="Cari disini..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="flex-1 bg-transparent border-none text-[10px] sm:text-xs text-white placeholder-amber-100/70 outline-none focus:outline-none focus:ring-0 min-w-0 py-0.5 font-bold"
-                  />
-                </div>
-                {searchQuery && (
-                  <button 
-                    onClick={() => setSearchQuery('')}
-                    className="p-0.5 text-white hover:text-amber-100 text-[10px] bg-amber-700/60 hover:bg-amber-850/80 rounded-full shrink-0 flex items-center justify-center w-4 h-4 font-bold"
-                    title="Bersihkan"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       )}
 
+      {/* FULL VIEW WIDESCREEN BANNER DRIVEN */}
+      {currentUser && activeTab === 'home' && !activeProductId && banner && banner.length > 0 && (
+        <PromoSlider banners={banner} />
+      )}
+
       {/* BODY WORKSPACE */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6 pb-44">
         
         {/* LOGIN AND REGISTRATION ROUTER */}
         {!currentUser ? (
@@ -862,94 +1016,139 @@ export default function App() {
             {activeTab === 'home' && (
               <div className="space-y-6">
                 
-                {/* 
-                  PASAR TERBARU TITLE CUSTOM GRADIENT GRAY BACKDROP (AS REQUESTED: 
-                  "buat tulisan di menu PASAR TERBARU ubah menjadi sprti di foto latar nya gradasi abu")
-                */}
-                <div className="relative rounded-3xl p-5 sm:p-6 overflow-hidden bg-gradient-to-r from-zinc-900 via-zinc-850 to-zinc-900 border border-zinc-805 shadow-xl flex flex-col gap-4">
-                  <div className="absolute inset-0 bg-radial-gradient-accent opacity-20 pointer-events-none" />
+                {/* TOP SEARCH BAR ROW WITH CONSOLIDATED FILTERS TOGGLE BUTTON (WITH 'GARIS 3' ICON ON THE RIGHT) */}
+                <div className="flex items-center gap-2">
                   
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 sm:p-3 bg-zinc-950 rounded-2xl border border-zinc-800 text-primary shadow-inner">
-                        <Sparkles size={20} />
+                  {/* SEARCH BAR POPUP TRIGGER (As requested: "search bar nya menu pop up") */}
+                  <div 
+                    onClick={() => setIsSearchModalOpen(true)}
+                    className="flex-1 relative cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-3 bg-zinc-900 border border-zinc-855 hover:border-zinc-800 rounded-2xl px-4 py-3 shadow-lg transition-all font-semibold select-none">
+                      <Search size={15} className="text-zinc-500 shrink-0 group-hover:text-[#0084ff] transition-colors" />
+                      <div className="flex-1 text-[11px] sm:text-xs text-zinc-500">
+                        {searchQuery ? (
+                          <span className="text-zinc-200">Hasil pencarian: <strong className="text-[#0084ff] font-bold">"{searchQuery}"</strong></span>
+                        ) : (
+                          <span>Cari game, produk, atau jasa disini...</span>
+                        )}
                       </div>
-                      <div>
-                        <h2 className="text-lg sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 via-zinc-300 to-zinc-400 uppercase tracking-tight">
-                          PASAR TERBARU
-                        </h2>
-                        <p className="text-[9px] sm:text-[11px] text-zinc-400 font-bold uppercase tracking-wider mt-0.5 leading-none">
-                          PRODUK DAN JASA PREMIUM TERPERCAYA SANS VICTIM
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Horizontal visual Category filter bar */}
-                  <div className="flex gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-                    {(['Semua', 'Robux', 'Item', 'GIG', 'Akun', 'Lainnya'] as const).map((cat) => (
-                      <button
-                        key={cat}
-                        onClick={() => setSelectedCategory(cat)}
-                        className={`text-[10px] sm:text-xs px-3 py-1.5 rounded-full font-extrabold transition-all duration-200 shrink-0 ${
-                          selectedCategory === cat
-                            ? 'bg-zinc-100 text-zinc-900 shadow-lg'
-                            : 'bg-zinc-950 text-zinc-400 hover:text-white border border-zinc-900'
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* PRICE FILTERS AND SORTING ROW */}
-                <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="text-[11px] font-black text-zinc-400 uppercase tracking-wider">Rentang Harga (Rp):</span>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        placeholder="Harga Terendah"
-                        value={minPrice}
-                        onChange={(e) => setMinPrice(e.target.value)}
-                        className="w-32 bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-zinc-200 outline-none focus:border-primary font-mono placeholder-zinc-650"
-                      />
-                      <span className="text-zinc-500 text-xs font-bold">-</span>
-                      <input
-                        type="number"
-                        placeholder="Harga Tertinggi"
-                        value={maxPrice}
-                        onChange={(e) => setMaxPrice(e.target.value)}
-                        className="w-32 bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-zinc-200 outline-none focus:border-primary font-mono placeholder-zinc-650"
-                      />
-                      {(minPrice !== '' || maxPrice !== '') && (
+                      {searchQuery && (
                         <button
-                          onClick={() => {
-                            setMinPrice('');
-                            setMaxPrice('');
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSearchQuery('');
                           }}
-                          className="text-[10px] bg-red-950/20 hover:bg-red-950/40 text-red-400 border border-red-900/10 px-2.5 py-1.5 rounded-lg font-bold uppercase"
+                          className="p-1 text-zinc-450 hover:text-white bg-zinc-805 hover:bg-zinc-750 rounded-full w-5 h-5 flex items-center justify-center text-[10px]"
+                          title="Hapus Pencarian"
                         >
-                          Reset
+                          ✕
                         </button>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <span className="text-[11px] font-black text-zinc-400 uppercase tracking-wider">Sorting Urutan:</span>
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as any)}
-                      className="bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 font-extrabold outline-none focus:border-primary"
+                  {/* PRICE & SORT COMPACT DROPDOWN TOGGLER - "pindahkan ke samping kanan search bar dengan logo nya garis 3" */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsPriceFilterOpen(!isPriceFilterOpen)}
+                      className={`p-3 border rounded-2xl transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95 ${
+                        isPriceFilterOpen || minPrice || maxPrice || sortBy !== 'latest'
+                          ? 'bg-[#0084ff] border-[#39a0ff] text-white shadow-[0_0_12px_rgba(0,132,255,0.35)]'
+                          : 'bg-zinc-900 border-zinc-850 text-zinc-400 hover:text-white hover:bg-zinc-800'
+                      }`}
+                      title="Saring Berdasarkan Rentang Harga & Urutan (Garis 3)"
                     >
-                      <option value="latest">Terbaru Terdaftar</option>
-                      <option value="cheapest">Harga Termurah (IDR ↑)</option>
-                      <option value="expensive">Harga Termahal (IDR ↓)</option>
-                    </select>
-                  </div>
-                </div>
+                      <SlidersHorizontal size={16} />
+                    </button>
+
+                    {/* Compact Filter Options Dropdown Portal */}
+                    {isPriceFilterOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40 bg-transparent cursor-default" onClick={() => setIsPriceFilterOpen(false)} />
+                        <div className="absolute right-0 top-14 w-80 bg-zinc-950 border border-zinc-850 rounded-2xl shadow-2xl p-4 z-50 flex flex-col gap-4 anim-slide-in">
+                          <div className="flex items-center justify-between pb-1 border-b border-zinc-900">
+                            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none">PROPERTIS SARINGAN</span>
+                            {(minPrice !== '' || maxPrice !== '' || sortBy !== 'latest') && (
+                              <button
+                                onClick={() => {
+                                  setMinPrice('');
+                                  setMaxPrice('');
+                                  setSortBy('latest');
+                                }}
+                                className="text-[9px] text-red-400 font-extrabold uppercase hover:underline"
+                              >
+                                Bersihkan Filter
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Range Inputs */}
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-wider block">Rentang Harga (Rp)</label>
+                            <div className="grid grid-cols-2 gap-2">
+                              <input
+                                type="number"
+                                placeholder="Harga Terendah"
+                                value={minPrice}
+                                onChange={(e) => setMinPrice(e.target.value)}
+                                className="w-full bg-zinc-900 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none focus:border-[#0084ff] font-mono placeholder-zinc-650"
+                              />
+                               <input
+                                 type="number"
+                                 placeholder="Harga Tertinggi"
+                                 value={maxPrice}
+                                 onChange={(e) => setMaxPrice(e.target.value)}
+                                 className="w-full bg-zinc-900 border border-[#0084ff]/30 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none focus:border-[#0084ff] font-mono placeholder-zinc-650"
+                               />
+                             </div>
+                           </div>
+
+                           {/* Sort Mode dropdown */}
+                           <div className="space-y-1.5">
+                             <label className="text-[10px] font-black text-zinc-500 uppercase tracking-wider block">Urutkan Koleksi</label>
+                             <select
+                               value={sortBy}
+                               onChange={(e) => setSortBy(e.target.value as any)}
+                               className="w-full bg-zinc-900 border border-zinc-900 rounded-xl px-3 py-2 text-xs text-zinc-200 font-black outline-none focus:border-[#0084ff] select-none"
+                             >
+                               <option value="latest">Terbaru Terdaftar</option>
+                               <option value="cheapest">Harga Termurah (Rp ↑)</option>
+                               <option value="expensive">Harga Termahal (Rp ↓)</option>
+                             </select>
+                           </div>
+                        </div>
+                       </>
+                     )}
+                   </div>
+
+                 </div>
+
+
+
+
+
+                 {/* 
+                   HORIZONTAL SCROLLING CATEGORIES WRAPPER (OUTLINE ORANGE AS REQUESTED)
+                   - Placed right below search bar & banner as replacement feed
+                 */}
+                 <div className="space-y-2 pt-0.5 pb-2">
+                   <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none scroll-smooth">
+                     {(['Semua', 'Robux', 'Item', 'GIG', 'Akun', 'Lainnya'] as const).map((cat) => (
+                       <button
+                         key={cat}
+                         onClick={() => setSelectedCategory(cat)}
+                         className={`text-[10px] sm:text-xs px-4 py-2 rounded-xl transition-all duration-200 shrink-0 ${
+                           selectedCategory === cat
+                             ? 'bg-[#0084ff] text-white shadow-md font-extrabold'
+                            : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-850 font-extrabold'
+                         }`}
+                       >
+                         {cat}
+                       </button>
+                     ))}
+                   </div>
+                 </div>
 
                 {/* Grid collection display */}
                 <div className="grid grid-cols-2 min-[420px]:grid-cols-3 min-[580px]:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-2 sm:gap-3">
@@ -962,80 +1161,76 @@ export default function App() {
                           setActiveProductId(p.id);
                           setActiveTab('detail');
                         }}
-                        className="group bg-zinc-900/90 border border-zinc-850 rounded-xl overflow-hidden cursor-pointer hover:border-primary transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/5 flex flex-col justify-between"
+                        className="group bg-[#131315] rounded-[18px] overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-lg flex flex-col justify-between"
                       >
-                        <div className="relative aspect-[4/3] w-full bg-zinc-950 overflow-hidden flex items-center justify-center bg-black">
+                        {/* WIDESCREEN ASPECT IMAGE (Matches photo 1 style ratio) */}
+                        <div className="relative aspect-[16/9] w-full bg-zinc-950 overflow-hidden flex items-center justify-center bg-zinc-950">
                           {p.images && p.images.length > 0 && (
                             isVideoVal(p.images[0]) ? (
-                              <video
-                                src={p.images[0]}
-                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 pointer-events-none"
-                                muted
-                                playsInline
-                              />
+                               <video
+                                 src={p.images[0]}
+                                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 pointer-events-none"
+                                 muted
+                                 playsInline
+                               />
                             ) : (
-                              <img
-                                src={p.images[0]}
-                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                alt={p.title}
-                              />
+                               <img
+                                 src={p.images[0]}
+                                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                 alt={p.title}
+                                 referrerPolicy="no-referrer"
+                               />
                             )
                           )}
-                          <span className="absolute top-1 right-1 bg-black/75 backdrop-blur-md px-1 py-0.2 rounded text-[7px] font-black text-white uppercase tracking-wider">
-                            {p.category}
-                          </span>
                           
                           {p.stock === 0 && (
-                            <div className="absolute inset-0 bg-black/85 flex items-center justify-center">
-                              <span className="px-2 py-0.5 bg-red-650 text-white font-extrabold text-[8px] rounded uppercase tracking-wider">
-                                HABIS
+                            <div className="absolute inset-0 bg-black/85 flex items-center justify-center z-10">
+                              <span className="px-2.5 py-1 bg-red-650 text-white font-extrabold text-[9px] rounded-lg uppercase tracking-widest">
+                                SOLD OUT
                               </span>
                             </div>
-                          )}
-
-                          {p.stock > 0 && p.stock <= 3 && (
-                            <span className="absolute bottom-1 left-1 bg-red-600 px-1 py-0.2 rounded text-[6px] font-black text-white uppercase">
-                              STOK SEKARAT
-                            </span>
                           )}
                         </div>
 
-                        {/* Summary details */}
-                        <div className="p-2 flex-1 flex flex-col justify-between space-y-1.5 bg-zinc-900">
+                        {/* Text Information block matching layout 1 */}
+                        <div className="p-3.5 flex-1 flex flex-col justify-between gap-2 bg-[#131315]">
                           <div>
-                            <h3 className="font-extrabold text-[11px] text-zinc-100 group-hover:text-primary transition-all line-clamp-2 leading-tight">
+                            {/* Title (matches bold label) */}
+                            <h3 className="font-extrabold text-xs sm:text-[13px] text-zinc-100 group-hover:text-[#0084ff] transition-colors line-clamp-1 leading-snug">
                               {p.title}
                             </h3>
-                            <div 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedStorefrontUserId(sel.id);
-                              }}
-                              className="flex items-center gap-1 mt-1 flex-wrap p-0.5 -m-0.5 rounded hover:bg-zinc-800/80 cursor-pointer text-zinc-400 hover:text-primary transition-all duration-200"
-                              title={`Klik untuk melihat jualan ${sel.username}`}
-                            >
-                              <span className="text-[9.5px] font-bold truncate">
-                                Toko: {sel.username}
-                              </span>
-                              {sel.verified && (
-                                <span className="w-2.5 h-2.5 bg-[#1DA1F2] text-[6px] text-white font-black rounded-full flex items-center justify-center shrink-0" title="Verified">
-                                  ✓
-                                </span>
-                              )}
-                              {sel.customRole && (
-                                <span className="text-[7.5px] bg-amber-500/20 text-yellow-400 font-extrabold px-1 py-0.2 rounded shrink-0">
-                                  {sel.customRole}
-                                </span>
-                              )}
+
+                            {/* Subtitle / category (matches "Robux 5 Hari") */}
+                            <div className="text-[10px] text-zinc-400 font-bold mt-1">
+                              {p.category}
                             </div>
-                          </div>
-                          
-                          <div className="border-t border-zinc-850/60 pt-1 flex items-center justify-between">
-                            <span className="text-[11px] font-extrabold text-primary truncate max-w-[75%]">
+
+                            {/* Price block - bold blue font custom size */}
+                            <div className="text-sm sm:text-[15px] font-black text-[#0084ff] leading-none mt-2.5 tracking-tight">
                               {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(p.price)}
-                            </span>
-                            <span className="text-[9px] text-zinc-500 font-bold">Stok: {p.stock}</span>
+                            </div>
+
+
                           </div>
+
+                          {/* Footer line with Total Terjual */}
+                          <div className="flex items-center justify-between text-[10px] sm:text-[11px] select-none pt-2 border-t border-zinc-900 mt-2">
+                            <span className="text-zinc-550 font-extrabold">
+                              {(() => {
+                                const soldQty = transactions
+                                  .filter((tx) => tx.productId === p.id && tx.status === 'completed')
+                                  .reduce((sum, tx) => sum + (tx.qty || 1), 0);
+                                if (soldQty >= 1000) {
+                                  const kValue = soldQty / 1000;
+                                  const formatted = kValue.toFixed(1).replace('.', ',');
+                                  const finalStr = formatted.endsWith(',0') ? `${Math.floor(kValue)}rb` : `${formatted}rb`;
+                                  return `${finalStr} Terjual`;
+                                }
+                                return `${soldQty} Terjual`;
+                              })()}
+                            </span>
+                          </div>
+
                         </div>
 
                       </div>
@@ -1063,6 +1258,7 @@ export default function App() {
                   product={p}
                   seller={sel}
                   currentUser={currentUser}
+                  transactions={transactions}
                   onBack={() => {
                     setActiveProductId(null);
                     setActiveTab('home');
@@ -1100,190 +1296,284 @@ export default function App() {
                 onUpdateProfile={handleUpdateProfile}
                 onEditProduct={handleInitiateEditProduct}
                 onDeleteProduct={handleDeleteProduct}
+                onLogout={() => setShowLogoutConfirm(true)}
+                onGoToTab={(tab) => {
+                  setActiveTab(tab);
+                  setOverrideDevChatId(null);
+                }}
               />
             )}
 
             {/* VIEW TAB 5: CREATIVE LISTING SALES FORMS */}
             {activeTab === 'upload' && (
-              <div className="max-w-2xl mx-auto bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl relative">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-amber-500" />
-                
-                <h2 className="text-xl md:text-2xl font-black text-zinc-100 flex items-center gap-2 mb-2">
-                  <Plus size={22} className="text-primary" />
-                  {editingProduct ? 'Ubah Informasi Jualan Anda' : 'Buat Jualan Baru'}
-                </h2>
-                <p className="text-xs text-zinc-500 mb-6 font-semibold">
-                  Isi informasi produk dengan jujur & tawarkan bantuan terbaik kepada pembeli SANS VICTIM.
-                </p>
-
-                <form onSubmit={handleProductSubmit} className="space-y-5">
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    
-                    {/* Category selectors */}
-                    <div className="space-y-1">
-                      <label className="text-xs text-zinc-400 font-bold">Kategori Barang</label>
-                      <select
-                        value={formCategory}
-                        onChange={(e) => setFormCategory(e.target.value as Product['category'])}
-                        className="w-full bg-zinc-950 border border-zinc-800 text-xs sm:text-sm p-3 rounded-xl text-zinc-200 outline-none focus:border-primary font-bold"
-                      >
-                        <option value="Robux">Robux</option>
-                        <option value="Item">Item In-Game</option>
-                        <option value="GIG">Gift In Game (GIG)</option>
-                        <option value="Akun">Akun Game / Roblox</option>
-                        <option value="Lainnya">Lainnya</option>
-                      </select>
+              currentUser.role !== 'seller' && currentUser.role !== 'admin' && currentUser.role !== 'developer' ? (
+                /* SELLER REGISTRATION GATED VIEW */
+                <div className="max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl relative">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#0084ff] to-[#0055ff]" />
+                  
+                  <div className="flex flex-col items-center text-center space-y-4 mb-6">
+                    <div className="p-4 bg-[#0084ff]/10 border border-[#0084ff]/20 rounded-full text-[#0084ff] shrink-0 animate-bounce">
+                      <Mail size={32} />
                     </div>
+                    <h2 className="text-xl md:text-2xl font-black text-zinc-100 uppercase tracking-tight font-sans">
+                      Daftar Sebagai Penjual
+                    </h2>
+                    <p className="text-xs text-zinc-400 font-semibold leading-relaxed">
+                      Untuk mulai menjual barang atau jasa di <span className="text-[#0084ff] font-extrabold">WAST Marketplace</span>, Anda diwajibkan mendaftar sebagai penjual resmi dengan mencantumkan alamat email aktif Anda.
+                    </p>
+                  </div>
 
-                    {/* Stock listing */}
-                    <div className="space-y-1">
-                      <label className="text-xs text-zinc-400 font-bold">Stok Produk</label>
+                  <form onSubmit={handleRegisterAsSellerSubmit} className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs text-zinc-400 font-bold">Username Anda</label>
                       <input
-                        type="number"
-                        min="0"
-                        value={formStock}
-                        onChange={(e) => setFormStock(e.target.value)}
-                        className="w-full bg-zinc-950 border border-zinc-800 text-xs sm:text-sm p-3 rounded-xl text-zinc-200 outline-none focus:border-primary font-bold font-mono"
+                        type="text"
+                        disabled
+                        value={currentUser.username}
+                        className="w-full bg-zinc-950/60 border border-zinc-850/60 rounded-xl py-2.5 px-4 text-xs font-semibold text-zinc-500 outline-none cursor-not-allowed select-none"
                       />
                     </div>
-                  </div>
 
-                  {/* Title */}
-                  <div className="space-y-1">
-                    <label className="text-xs text-zinc-400 font-bold">Judul Postingan Baru</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Contoh: 500 Robux Murah Instan"
-                      value={formTitle}
-                      onChange={(e) => setFormTitle(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-805 text-xs sm:text-sm p-3 rounded-xl text-zinc-200 outline-none focus:border-primary font-bold"
-                    />
-                  </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs text-[#0084ff] font-extrabold flex items-center gap-1">
+                        <Mail size={12} />
+                        Alamat Email Aktif <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        placeholder="Contoh: namaanda@gmail.com"
+                        value={sellerRegEmail}
+                        onChange={(e) => setSellerRegEmail(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 text-xs sm:text-sm p-3 rounded-xl text-zinc-200 outline-none focus:border-[#0084ff] font-bold"
+                      />
+                      <p className="text-[10px] text-zinc-500 leading-normal font-semibold">
+                        Kami akan menggunakan email ini untuk mengirimkan update transaksi, bantuan teknis, serta komunikasi resmi.
+                      </p>
+                    </div>
 
-                  {/* Pricing field */}
-                  <div className="space-y-1">
-                    <label className="text-xs text-zinc-400 font-bold">Harga Jual Jasa/Item (Rupiah Rp)</label>
-                    <input
-                      type="number"
-                      required
-                      min="1"
-                      placeholder="Contoh: 85000"
-                      value={formPrice}
-                      onChange={(e) => setFormPrice(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-805 text-xs sm:text-sm p-3 rounded-xl text-zinc-200 outline-none focus:border-primary font-bold font-mono"
-                    />
-                  </div>
+                    <button
+                      type="submit"
+                      className="w-full bg-[#0084ff] hover:bg-blue-600 text-white py-3 rounded-xl font-black text-xs sm:text-sm tracking-tight transition-all active:scale-95 flex items-center justify-center gap-1.5 shadow-md mt-2 cursor-pointer"
+                    >
+                      Daftar Sebagai Penjual
+                    </button>
+                  </form>
 
-                  {/* Detailed descriptions */}
-                  <div className="space-y-1">
-                    <label className="text-xs text-zinc-400 font-bold">Deskripsi Penjelasan Detil</label>
-                    <textarea
-                      required
-                      rows={4}
-                      placeholder="Jelaskan tatacara pengiriman, gamepass link, atau waktu online toko Anda agar pembeli paham."
-                      value={formDesc}
-                      onChange={(e) => setFormDesc(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-800 text-xs sm:text-sm p-3 rounded-xl text-zinc-200 outline-none focus:border-primary font-semibold leading-relaxed"
-                    />
+                  <div className="mt-8 border-t border-zinc-800/60 pt-5 flex flex-col items-center text-center space-y-2">
+                    <p className="text-[11px] text-zinc-500 font-bold uppercase tracking-wider">Butuh bantuan?</p>
+                    <a
+                      href="https://discord.gg/kQPXrnSbuH"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full px-5 py-2.5 bg-indigo-600/10 hover:bg-indigo-600/20 border border-indigo-500/20 text-indigo-400 hover:text-indigo-300 font-extrabold text-xs rounded-xl transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Headphones size={13} />
+                      Hubungi CS (Discord)
+                    </a>
                   </div>
+                </div>
+              ) : (
+                /* STANDARD CREATE/EDIT PRODUCT VIEW */
+                <div className="max-w-2xl mx-auto bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl relative">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-amber-500" />
+                  
+                  <h2 className="text-xl md:text-2xl font-black text-zinc-100 flex items-center gap-2 mb-2">
+                    <Plus size={22} className="text-primary" />
+                    {editingProduct ? 'Ubah Informasi Jualan Anda' : 'Buat Jualan Baru'}
+                  </h2>
+                  <p className="text-xs text-zinc-500 mb-6 font-semibold">
+                    Isi informasi produk dengan jujur & tawarkan bantuan terbaik kepada pembeli WAST.
+                  </p>
 
-                  {/* Discord and WA physical targets */}
-                  <div className="border-t border-zinc-800 pt-4 space-y-4">
-                    <h3 className="text-xs text-zinc-500 font-extrabold uppercase tracking-wide">Hubungi Di Luar Sistem (Sosial Media)</h3>
-                    
+                  <form onSubmit={handleProductSubmit} className="space-y-5">
                     <div className="grid sm:grid-cols-2 gap-4">
+                      
+                      {/* Category selectors */}
                       <div className="space-y-1">
-                        <label className="text-xs text-zinc-400 font-bold">Link Undangan Discord (Opsional)</label>
-                        <input
-                          type="text"
-                          placeholder="https://discord.gg/sansvictim"
-                          value={formDiscord}
-                          onChange={(e) => setFormDiscord(e.target.value)}
-                          className="w-full bg-zinc-950 border border-zinc-800 text-xs sm:text-sm p-3 rounded-xl text-zinc-200 outline-none focus:border-primary font-semibold"
-                        />
+                        <label className="text-xs text-zinc-400 font-bold">Kategori Barang</label>
+                        <select
+                          value={formCategory}
+                          onChange={(e) => setFormCategory(e.target.value as Product['category'])}
+                          className="w-full bg-zinc-950 border border-zinc-800 text-xs sm:text-sm p-3 rounded-xl text-zinc-200 outline-none focus:border-primary font-bold"
+                        >
+                          <option value="Robux">Robux</option>
+                          <option value="Item">Item In-Game</option>
+                          <option value="GIG">Gift In Game (GIG)</option>
+                          <option value="Akun">Akun Game / Roblox</option>
+                          <option value="Lainnya">Lainnya</option>
+                        </select>
                       </div>
+
+                      {/* Stock listing */}
                       <div className="space-y-1">
-                        <label className="text-xs text-zinc-400 font-bold">No WhatsApp Toko (Opsional)</label>
+                        <label className="text-xs text-zinc-400 font-bold">Stok Produk</label>
                         <input
-                          type="text"
-                          placeholder="Contoh: 0812345678"
-                          value={formWa}
-                          onChange={(e) => setFormWa(e.target.value.replace(/\D/g, ''))}
-                          className="w-full bg-zinc-950 border border-zinc-800 text-xs sm:text-sm p-3 rounded-xl text-zinc-200 outline-none focus:border-primary font-mono"
+                          type="number"
+                          min="0"
+                          value={formStock}
+                          onChange={(e) => setFormStock(e.target.value)}
+                          className="w-full bg-zinc-950 border border-zinc-800 text-xs sm:text-sm p-3 rounded-xl text-zinc-200 outline-none focus:border-primary font-bold font-mono"
                         />
                       </div>
                     </div>
-                  </div>
 
-                  {/* Pictures uploading list */}
-                  <div className="border-t border-zinc-800 pt-4 space-y-2">
-                    <label className="text-xs text-zinc-400 font-bold flex justify-between items-center">
-                      <span>Unggah Gambar / Video Barang (Minimal 1)</span>
-                      <span className="text-[10px] text-zinc-500">Mendukung multi-upload (Gambar & Video)</span>
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*,video/*"
-                      multiple
-                      onChange={handleProductUploadPics}
-                      className="w-full bg-zinc-950 border border-zinc-800 text-xs py-2 px-3 rounded-xl text-zinc-400 file:bg-zinc-800 file:border-0 file:rounded-md file:px-2.5 file:py-1 file:text-xs file:font-semibold file:text-zinc-100 hover:file:bg-primary transition-all cursor-pointer"
-                    />
+                    {/* Title */}
+                    <div className="space-y-1">
+                      <label className="text-xs text-zinc-400 font-bold">Judul Postingan Baru</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Contoh: 500 Robux Murah Instan"
+                        value={formTitle}
+                        onChange={(e) => setFormTitle(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-805 text-xs sm:text-sm p-3 rounded-xl text-zinc-200 outline-none focus:border-primary font-bold"
+                      />
+                    </div>
 
-                    {/* Previews wrap container */}
-                    {formImages.length > 0 && (
-                      <div className="flex gap-2-flex-wrap pt-2 overflow-x-auto">
-                        {formImages.map((img, index) => (
-                          <div key={index} className="relative w-16 h-16 rounded-xl overflow-hidden border border-zinc-850 shrink-0 select-none bg-black flex items-center justify-center">
-                            {isVideoVal(img) ? (
-                              <video src={img} className="w-full h-full object-cover pointer-events-none" muted playsInline />
-                            ) : (
-                              <img src={img} className="w-full h-full object-cover" alt="" />
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setFormImages(formImages.filter((_, idx) => idx !== index));
-                              }}
-                              className="absolute top-1 right-1 w-4 h-4 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center text-[10px]"
-                              title="Hapus media ini"
-                            >
-                              &times;
-                            </button>
-                          </div>
-                        ))}
+                    {/* Pricing field */}
+                    <div className="space-y-1">
+                      <label className="text-xs text-zinc-400 font-bold">Harga Jual Jasa/Item (Rupiah Rp)</label>
+                      <input
+                        type="number"
+                        required
+                        min="1"
+                        placeholder="Contoh: 85000"
+                        value={formPrice}
+                        onChange={(e) => setFormPrice(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-805 text-xs sm:text-sm p-3 rounded-xl text-zinc-200 outline-none focus:border-primary font-bold font-mono"
+                      />
+                    </div>
+
+                    {/* Detailed descriptions */}
+                    <div className="space-y-1">
+                      <label className="text-xs text-zinc-400 font-bold">Deskripsi Penjelasan Detil</label>
+                      <textarea
+                        required
+                        rows={4}
+                        placeholder="Jelaskan tatacara pengiriman, gamepass link, atau waktu online toko Anda agar pembeli paham."
+                        value={formDesc}
+                        onChange={(e) => setFormDesc(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-800 text-xs sm:text-sm p-3 rounded-xl text-zinc-200 outline-none focus:border-primary font-semibold leading-relaxed"
+                      />
+                    </div>
+
+                    {/* Discord and WA physical targets */}
+                    <div className="border-t border-zinc-800 pt-4 space-y-4">
+                      <h3 className="text-xs text-zinc-500 font-extrabold uppercase tracking-wide">Hubungi Di Luar Sistem (Sosial Media)</h3>
+                      
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="text-xs text-zinc-400 font-bold">Link Undangan Discord (Opsional)</label>
+                          <input
+                            type="text"
+                            placeholder="https://discord.gg/sansvictim"
+                            value={formDiscord}
+                            onChange={(e) => setFormDiscord(e.target.value)}
+                            className="w-full bg-zinc-950 border border-zinc-800 text-xs sm:text-sm p-3 rounded-xl text-zinc-200 outline-none focus:border-primary font-semibold"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs text-zinc-400 font-bold">No WhatsApp Toko (Opsional)</label>
+                          <input
+                            type="text"
+                            placeholder="Contoh: 0812345678"
+                            value={formWa}
+                            onChange={(e) => setFormWa(e.target.value.replace(/\D/g, ''))}
+                            className="w-full bg-zinc-950 border border-zinc-800 text-xs sm:text-sm p-3 rounded-xl text-zinc-200 outline-none focus:border-primary font-mono"
+                          />
+                        </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
 
-                  {/* Submit controls */}
-                  <div className="pt-4 border-t border-zinc-800 flex justify-end gap-3.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingProduct(null);
-                        setFormTitle('');
-                        setFormDesc('');
-                        setFormPrice('');
-                        setFormStock('1');
-                        setFormDiscord('');
-                        setFormWa('');
-                        setFormImages([]);
-                        setActiveTab('home');
-                      }}
-                      className="px-5 py-2.5 bg-zinc-950 border border-zinc-850 hover:bg-zinc-800 rounded-xl text-xs font-bold text-zinc-300 transition-all font-semibold"
+                    {/* Pictures uploading list */}
+                    <div className="border-t border-zinc-800 pt-4 space-y-2">
+                      <label className="text-xs text-zinc-400 font-bold flex justify-between items-center">
+                        <span>Unggah Gambar / Video Barang (Minimal 1)</span>
+                        <span className="text-[10px] text-zinc-500">Mendukung multi-upload (Gambar & Video)</span>
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*,video/*"
+                        multiple
+                        onChange={handleProductUploadPics}
+                        className="w-full bg-zinc-950 border border-zinc-800 text-xs py-2 px-3 rounded-xl text-zinc-400 file:bg-zinc-800 file:border-0 file:rounded-md file:px-2.5 file:py-1 file:text-xs file:font-semibold file:text-zinc-100 hover:file:bg-primary transition-all cursor-pointer"
+                      />
+
+                      {/* Previews wrap container */}
+                      {formImages.length > 0 && (
+                        <div className="flex gap-2-flex-wrap pt-2 overflow-x-auto font-bold text-xs p-1">
+                          {formImages.map((img, index) => (
+                            <div key={index} className="relative w-16 h-16 rounded-xl overflow-hidden border border-zinc-850 shrink-0 select-none bg-black flex items-center justify-center">
+                              {isVideoVal(img) ? (
+                                <video src={img} className="w-full h-full object-cover pointer-events-none" muted playsInline />
+                              ) : (
+                                <img src={img} className="w-full h-full object-cover" alt="" />
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormImages(formImages.filter((_, idx) => idx !== index));
+                                }}
+                                className="absolute top-1 right-1 w-4 h-4 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center text-[10px]"
+                                title="Hapus media ini"
+                              >
+                                &times;
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Submit controls */}
+                    <div className="pt-4 border-t border-zinc-800 flex justify-end gap-3.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingProduct(null);
+                          setFormTitle('');
+                          setFormDesc('');
+                          setFormPrice('');
+                          setFormStock('1');
+                          setFormDiscord('');
+                          setFormWa('');
+                          setFormImages([]);
+                          setActiveTab('home');
+                        }}
+                        className="px-5 py-2.5 bg-zinc-955 border border-zinc-850 hover:bg-zinc-800 rounded-xl text-xs font-bold text-zinc-300 transition-all font-semibold"
+                      >
+                        Batalkan
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-6 py-2.5 bg-[#0084ff] hover:bg-blue-600 text-white rounded-xl text-xs sm:text-sm font-black transition-all shadow-lg active:scale-95"
+                      >
+                        {editingProduct ? 'Simpan Perubahan postingan' : 'Posting ke Marketplace'}
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* Assistive footer */}
+                  <div className="mt-6 border-t border-zinc-850 pt-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+                    <div>
+                      <p className="text-xs text-zinc-400 font-bold flex items-center justify-center sm:justify-start gap-1">
+                        <span>Butuh bantuan?</span>
+                      </p>
+                      <p className="text-[10px] text-zinc-550 mt-0.5">Kami siap mendampingi Anda jika terdapat kendala dalam menjual barang.</p>
+                    </div>
+                    <a
+                      href="https://discord.gg/kQPXrnSbuH"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 bg-zinc-955 hover:bg-zinc-800 border border-zinc-850 hover:border-zinc-700 text-xs font-semibold text-zinc-350 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
                     >
-                      Batalkan
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs sm:text-sm font-black transition-all shadow-lg active:scale-95"
-                    >
-                      {editingProduct ? 'Simpan Perubahan postingan' : 'Posting ke Marketplace'}
-                    </button>
+                      <Headphones size={13} className="text-[#0084ff]" />
+                      Hubungi CS (Discord)
+                    </a>
                   </div>
-                </form>
-              </div>
+                </div>
+              )
             )}
 
             {/* VIEW TAB 6: IN-APP CHAT DIRECT CONVERSE MODULES */}
@@ -1303,6 +1593,10 @@ export default function App() {
                 }}
                 onReadChat={handleReadChat}
                 onViewUserStorefront={(userId) => setSelectedStorefrontUserId(userId)}
+                onSelectProduct={(productId) => {
+                  setActiveProductId(productId);
+                  setActiveTab('detail');
+                }}
               />
             )}
 
@@ -1316,7 +1610,7 @@ export default function App() {
                       Daftar Toko & Penjual
                     </h2>
                     <p className="text-xs text-zinc-500 font-semibold mt-1">
-                      Temukan dan jelajahi etalase jualan para pencari nafkah premium SANS VICTIM.
+                      Temukan dan jelajahi etalase jualan para pencari nafkah premium WAST.
                     </p>
                   </div>
                   
@@ -1455,6 +1749,9 @@ export default function App() {
                 onDeleteProduct={handleDeleteProduct}
                 onMonitorChatSession={handleMonitorChat}
                 onToggleUserBan={handleToggleUserBan}
+                banner={banner}
+                onUpdateBanner={handleUpdateBanner}
+                onUpdateUserBalance={handleUpdateUserBalance}
               />
             )}
 
@@ -1466,17 +1763,17 @@ export default function App() {
       {/* FOOTER */}
       <footer className="border-t border-zinc-900 bg-zinc-950 py-8 px-4 text-center mt-12">
         <div className="max-w-7xl mx-auto space-y-3">
-          <div className="flex items-center justify-center gap-2">
-            <SVGLogo size={32} />
-            <span className="font-black text-transparent bg-clip-text bg-gradient-to-r from-primary via-amber-500 to-white text-base">
-              SANS VICTIM MARKETPLACE
-            </span>
+          <div className="flex flex-col items-center justify-center gap-2">
+            <div className="mb-1">
+              <SVGLogo size={32} variant="bear" />
+            </div>
+            <WastWordmark size="md" />
           </div>
           <p className="text-xs text-zinc-600 max-w-md mx-auto leading-relaxed">
-            SANS VICTIM adalah platform marketplace premium terpercaya untuk item in-game, Robux aman, dan Gift In Game. Semua transaksi ditata dengan kepatuhan tinggi serta jaminan kasir handshake.
+            WAST adalah platform marketplace premium terpercaya untuk item in-game, Robux aman, dan Gift In Game. Semua transaksi ditata dengan kepatuhan tinggi serta jaminan kasir handshake.
           </p>
           <div className="text-[10px] text-zinc-700">
-            &copy; {new Date().getFullYear()} SANS VICTIM. Hak Cipta Dilindungi Undang-Undang.
+            &copy; {new Date().getFullYear()} WAST. Hak Cipta Dilindungi Undang-Undang.
           </div>
         </div>
       </footer>
@@ -1564,7 +1861,7 @@ export default function App() {
             <div className="space-y-1">
               <h3 className="font-extrabold text-[#f4f4f6] text-base uppercase tracking-tight">Konfirmasi Keluar Akun</h3>
               <p className="text-xs text-zinc-400 font-semibold leading-relaxed">
-                Apakah Anda benar-benar yakin ingin keluar dari akun SANS VICTIM Anda saat ini?
+                Apakah Anda benar-benar yakin ingin keluar dari akun WAST Anda saat ini?
               </p>
             </div>
 
@@ -1611,6 +1908,142 @@ export default function App() {
             setSelectedStorefrontUserId(null);
           }}
         />
+      )}
+
+      {/* POPUP SEARCH MODAL (As requested: "search bar nya menu pop up") */}
+      {isSearchModalOpen && (
+        <div className="fixed inset-0 bg-black/85 flex items-start justify-center z-50 p-4 pt-16 sm:pt-24 backdrop-blur-md transition-all animate-fade-in overflow-y-auto">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-xl p-5 space-y-4 animate-scale-up shadow-2xl relative">
+            
+            {/* Header / Input controls */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 flex items-center gap-2.5 bg-zinc-950 border border-zinc-800 rounded-2xl px-3.5 py-3 focus-within:border-primary transition-all">
+                <Search size={16} className="text-zinc-500" />
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="Ketik nama game, kategori, atau deskripsi..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1 bg-transparent border-none text-xs sm:text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:outline-none focus:ring-0"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="p-1 text-zinc-405 hover:text-white bg-zinc-850 rounded-full w-4.5 h-4.5 flex items-center justify-center text-[10px]"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              
+              <button
+                onClick={() => setIsSearchModalOpen(false)}
+                className="px-3.5 py-3.5 bg-zinc-950 hover:bg-zinc-850 text-zinc-400 hover:text-white rounded-2xl text-xs font-black border border-zinc-850 cursor-pointer active:scale-95 transition-all"
+              >
+                Tutup
+              </button>
+            </div>
+
+            {/* Quick suggestions */}
+            <div className="space-y-1.5">
+              <p className="text-[10px] text-zinc-500 font-extrabold uppercase tracking-widest block animate-pulse">Pencarian Populer</p>
+              <div className="flex flex-wrap gap-1.5">
+                {['Robux', 'Item', 'GIG', 'Pedang', 'Akun', 'Premium'].map((tag) => (
+                  <button
+                    key={tag}
+                    onClick={() => setSearchQuery(tag)}
+                    className="px-3 py-1.5 bg-zinc-950 hover:bg-zinc-850 text-zinc-400 hover:text-primary border border-zinc-850/60 rounded-xl text-[10px] font-bold transition-all"
+                  >
+                    #{tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Listed dynamic matched suggestions */}
+            <div className="pt-2 border-t border-zinc-850">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] text-zinc-500 font-extrabold uppercase tracking-widest">
+                  Hasil Pencarian ({filteredProducts.length})
+                </span>
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="text-[9px] text-primary hover:underline font-extrabold uppercase"
+                  >
+                    Reset Filter
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                {filteredProducts.length === 0 ? (
+                  <div className="text-center py-8 text-zinc-500 space-y-2">
+                    <p className="text-xs font-semibold">Tidak menemukan produk yang cocok.</p>
+                    <p className="text-[10px] uppercase tracking-wider text-zinc-655">Coba kata kunci lain atau periksa ejaan Anda</p>
+                  </div>
+                ) : (
+                  filteredProducts.map((p) => {
+                    const sel = getProductSeller(p.sellerId);
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => {
+                          setActiveProductId(p.id);
+                          setActiveTab('detail');
+                          setIsSearchModalOpen(false);
+                        }}
+                        className="flex gap-3 bg-zinc-950/40 hover:bg-zinc-850 border border-zinc-850/40 hover:border-zinc-800 p-2.5 rounded-2xl cursor-pointer transition-all duration-200 group active:scale-[0.98]"
+                      >
+                        {/* Image view */}
+                        <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden shrink-0">
+                          {p.images && p.images[0] ? (
+                            <img src={p.images[0]} referrerPolicy="no-referrer" className="w-full h-full object-cover group-hover:scale-105 transition-all" alt={p.title} />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-zinc-600 bg-zinc-950">
+                              <ShoppingBag size={14} />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Text view info */}
+                        <div className="flex-1 min-w-0 flex flex-col justify-between">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[8.5px] font-black px-1.5 py-0.2 uppercase tracking-wide rounded-md bg-zinc-950 border border-zinc-850 text-zinc-400">
+                                {p.category}
+                              </span>
+                              {sel?.verified && (
+                                <span className="flex items-center gap-0.5 text-[8.5px] font-bold text-[#10b981] bg-[#10b981]/10 px-1 py-0.2 rounded-md">
+                                  <BadgeCheck size={9} />
+                                  <span>VERIFIED</span>
+                                </span>
+                              )}
+                            </div>
+                            <h4 className="text-xs font-black text-zinc-200 group-hover:text-primary transition-colors truncate">
+                              {p.title}
+                            </h4>
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-extrabold text-[#10b981]">
+                              {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(p.price)}
+                            </span>
+                            <span className="text-[9px] text-zinc-500 font-black">
+                              STOK: {p.stock}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+          </div>
+        </div>
       )}
 
 

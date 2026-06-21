@@ -53,7 +53,7 @@ export const UserStorefrontModal: React.FC<UserStorefrontModalProps> = ({
         <div className="p-4 border-b border-zinc-800 bg-zinc-950/60 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <ShoppingBag size={16} className="text-primary" />
-            <span className="text-xs font-black text-zinc-400 uppercase tracking-wider">Etalase Toko SANS Victim</span>
+            <span className="text-xs font-black text-zinc-400 uppercase tracking-wider">Etalase Toko WAST</span>
           </div>
           <button 
             onClick={onClose}

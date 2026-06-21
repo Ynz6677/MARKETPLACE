@@ -8,6 +8,8 @@ export interface User {
   verified: boolean;
   profilePic: string | null;
   isBanned?: boolean;
+  balance?: number;
+  email?: string;
 }
 
 export interface Product {
@@ -57,4 +59,15 @@ export interface ChatSession {
   sellerId: string;
   lastMessage: string;
   timestamp: number;
+}
+
+export interface BannerConfig {
+  id: string; // "banner"
+  imageUrl: string;
+  title: string;
+  subtitle: string;
+  buttonText: string;
+  buttonLink: string;
+  bgColor: string;
+  accentColor: string;
 }

@@ -5,7 +5,7 @@ export const INITIAL_USERS: User[] = [
     id: 'u1',
     username: 'Developer',
     password: '123',
-    pin: '1234',
+    pin: '0506',
     role: 'developer',
     customRole: 'Owner',
     verified: true,

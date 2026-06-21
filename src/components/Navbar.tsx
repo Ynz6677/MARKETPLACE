@@ -3,16 +3,38 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { User } from '../types';
-import { SVGLogo } from './SVGLogo';
-import { Plus, Receipt, Shield, UserX, Menu, Search, LogOut, ExternalLink, Settings, Home, Heart, Sun, Moon, Headphones, MessageSquare, History, Users } from 'lucide-react';
+import { SVGLogo, WastWordmark } from './SVGLogo';
+import { 
+  ChevronLeft, 
+  PlusCircle, 
+  Home, 
+  Heart, 
+  Sun, 
+  Moon, 
+  Headphones, 
+  MessageSquare, 
+  History, 
+  MoreHorizontal, 
+  Bell, 
+  User as UserIcon,
+  Info,
+  LogOut,
+  Shield,
+  Menu,
+  Flame,
+  Sparkles
+} from 'lucide-react';
 
 interface NavbarProps {
   currentUser: User | null;
   notificationCount: number;
+  activeTab: string;
+  activeProductId: number | null;
   onSearchChange: (q: string) => void;
   onGoToTab: (tab: 'home' | 'history' | 'profile' | 'developer' | 'upload' | 'chats' | 'stores') => void;
+  onBackClick: () => void;
   onLogout: () => void;
   isDarkMode: boolean;
   onToggleTheme: () => void;
@@ -21,210 +43,271 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({
   currentUser,
   notificationCount,
+  activeTab,
+  activeProductId,
   onSearchChange,
   onGoToTab,
+  onBackClick,
   onLogout,
   isDarkMode,
   onToggleTheme,
 }) => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   if (!currentUser) return null;
 
+  // Derive the active heading title based on current view/tab
+  const getTabTitle = () => {
+    if (activeProductId) return 'DETAIL PRODUK';
+    switch (activeTab) {
+      case 'home': return 'WAST';
+      case 'history': return 'RIWAYAT SAYA';
+      case 'profile': return 'PROFIL AKUN';
+      case 'developer': return 'DEVELOPER PANEL';
+      case 'upload': return 'UNGGAH ITEM';
+      case 'chats': return 'SISTEM CHAT';
+      case 'stores': return 'DAFTAR TOKO';
+      default: return 'WAST';
+    }
+  };
+
   return (
-    <nav className="bg-zinc-900 border-b border-zinc-800 relative z-40 py-3 px-4 sm:px-6">
-      
-      {/* 
-        RESPONSIVE SOLUTION (AS REQUESTED): 
-        On narrow breakpoints (<500px), we stack items vertically into bottom bars / responsive layout
-        so that the username, store logo, verified check, and role remain 100% visible, neat, and readable!
-      */}
-      <div className="max-w-7xl mx-auto flex flex-col gap-3 min-[580px]:flex-row min-[580px]:items-center min-[580px]:justify-between">
+    <>
+      {/* 1. TOP HEADER AND UTILITY BAND (PRECISE REPRESENTATION MATCHING WAST SCREENSHOTS) */}
+      <header className="bg-gradient-to-r from-zinc-950 via-[#001736] to-zinc-950 border-b border-[#0084ff]/30 sticky top-0 z-45 w-full select-none backdrop-blur-md shadow-[0_4px_20px_rgba(0,132,255,0.08)]">
         
-        {/* Nav Left: Brand & Logo always prominent */}
-        <div className="flex items-center justify-between min-[580px]:justify-start gap-3">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => onGoToTab('home')}>
-            <SVGLogo size={38} />
+        {/* BRANDING LOGO & UTILITY PILLS CARD BAR */}
+        <div className="w-full flex items-center justify-between px-4 py-2.5 sm:px-6 relative">
+          
+          {/* Logo on Left - WAST Logo */}
+          <div className="flex items-center gap-2.5 cursor-pointer select-none" onClick={() => onGoToTab('home')}>
+            <SVGLogo size={32} variant="bear" />
             <div className="flex flex-col">
-              <span className="font-black text-lg tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-primary via-amber-500 to-white leading-none">
-                SANS VICTIM
-              </span>
-              <span className="text-[9px] text-zinc-500 font-extrabold tracking-widest uppercase">
-                Premium Store
+              <WastWordmark size="md" />
+              <span className="text-[7px] text-zinc-650 font-extrabold tracking-widest uppercase -mt-0.5 sm:block hidden">
+                PREMIER MARKETPLACE
               </span>
             </div>
           </div>
 
-          {/* Quick Stats count overlay */}
-          <div className="flex items-center gap-2 min-[580px]:hidden">
+          {/* Clean Action Capsule Buttons on Right */}
+          <div className="flex items-center gap-2">
+            
+            {/* Developer Button shortcut - Uses logo/icon only on mobile as requested! */}
             {(currentUser.role === 'developer' || currentUser.role === 'admin') && (
               <button
                 onClick={() => onGoToTab('developer')}
-                className="p-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-yellow-500 border border-amber-500/20 rounded-xl"
-                title="Admin Dashboard"
+                className={`p-2 sm:px-3 sm:py-1.5 rounded-xl transition-all flex items-center gap-1 text-[10px] font-black active:scale-95 shrink-0 border uppercase cursor-pointer ${
+                  activeTab === 'developer'
+                    ? 'bg-[#0084ff] border-[#39a0ff] text-white font-black shadow-blue-500/20'
+                    : 'bg-transparent border-[#0084ff]/30 hover:bg-[#0084ff]/10 text-[#0084ff]'
+                }`}
+                title="Buka Panel Developer"
               >
-                <Shield size={16} className="fill-orange-500 stroke-orange-500" />
+                <Shield size={12} className="fill-current shrink-0" />
+                <span className="hidden sm:inline">Dev Panel</span>
               </button>
             )}
-            
+
+            {/* Notification Bell Icon - Sleek blue glowing box */}
             <button
-              onClick={onLogout}
-              className="p-2.5 bg-red-950/20 hover:bg-red-950/45 text-red-400 border border-red-900/30 rounded-xl"
-              title="Keluar"
+               onClick={() => onGoToTab('chats')}
+               className="p-2 bg-transparent border border-[#0084ff]/25 text-[#0084ff] hover:bg-[#0084ff]/10 rounded-xl relative transition-all cursor-pointer flex items-center justify-center shrink-0"
+               title="Notifikasi Chats"
             >
-              <LogOut size={16} />
-            </button>
-          </div>
-        </div>
-
-
-
-        {/* Right side: Action menus */}
-        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3.5 pt-1.5 min-[580px]:pt-0 border-t border-zinc-800/60 min-[580px]:border-0">
-          
-          {/* Icons navigation segment */}
-          <div className="flex items-center gap-2">
-            
-            {/* Beranda tab menu button */}
-            <button
-              onClick={() => onGoToTab('home')}
-              className="p-2 sm:p-2.5 bg-zinc-950 hover:bg-zinc-800 text-zinc-300 hover:text-primary rounded-xl border border-zinc-850 transition-all flex items-center gap-1.5 text-xs font-bold"
-              title="Beranda"
-            >
-              <Home size={15} />
-              <span className="hidden md:inline">Beranda</span>
-            </button>
-
-
-            {/* Create new Post button */}
-            <button
-              onClick={() => onGoToTab('upload')}
-              className="p-2 sm:p-2.5 bg-zinc-950 hover:bg-zinc-800 text-zinc-300 hover:text-primary rounded-xl border border-zinc-850 transition-all flex items-center gap-1.5 text-xs font-bold"
-              title="Jual Item"
-            >
-              <Plus size={15} />
-              <span className="hidden md:inline">Jual</span>
-            </button>
-
-            {/* In-app Messages Inbox */}
-            <button
-              onClick={() => onGoToTab('chats')}
-              className="p-2 sm:p-2.5 bg-zinc-950 hover:bg-zinc-800 text-zinc-300 hover:text-primary rounded-xl border border-zinc-850 transition-all flex items-center gap-1.5 text-xs font-bold relative"
-              title="Obrolan Sistem"
-            >
-              <MessageSquare size={15} className="text-zinc-400" />
-              <span className="hidden md:inline">Chat</span>
+              <Bell size={14} />
               {notificationCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 bg-red-500 text-[10px] text-white font-extrabold rounded-full border border-zinc-900 animate-pulse">
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#0084ff] text-[7.5px] text-white font-black rounded-full border border-zinc-950 flex items-center justify-center animate-pulse">
                   {notificationCount}
                 </span>
               )}
             </button>
 
-            {/* Order/Sale history button */}
+            {/* Hamburger 3-Line Menu Button (Custom Dropdown replacement) */}
             <button
-              onClick={() => onGoToTab('history')}
-              className="p-2 sm:p-2.5 bg-zinc-950 hover:bg-zinc-800 text-zinc-300 hover:text-primary rounded-xl border border-zinc-850 transition-all flex items-center gap-1.5 text-xs font-bold"
-              title="Riwayat Pesanan"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className={`p-2 border rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-90 ${
+                isDropdownOpen
+                  ? 'bg-[#0084ff] border-[#39a0ff] text-white'
+                  : 'bg-transparent border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900/40'
+              }`}
+              title="Pilihan Akun & Layanan"
             >
-              <History size={15} />
-              <span className="hidden md:inline">Riwayat</span>
+              <Menu size={14} />
             </button>
-
-             {/* Premium Yellow-Orange Gradient Support Saweria Button (as requested) */}
-            <a
-              href="https://saweria.co/Waast"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white rounded-xl transition-all flex items-center gap-1 sm:gap-1.5 text-xs font-extrabold shadow-md hover:shadow-orange-500/20 active:scale-95"
-              title="Dukung Developer untuk mengembangkan lebih lanjut"
-            >
-              <Heart size={14} className="fill-white stroke-white animate-pulse" />
-              <span>Support</span>
-            </a>
-
-            {/* Customer Service Discord Link - Labeled 'CS' with Blue Background on the Right of Support */}
-            <a
-              href="https://discord.gg/kQPXrnSbuH"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 bg-[#5865F2] hover:bg-[#4752C4] text-white rounded-xl transition-all flex items-center gap-1 sm:gap-1.5 text-xs font-extrabold shadow-md hover:shadow-[#5865F2]/20 active:scale-95"
-              title="Customer Service via Discord"
-            >
-              <Headphones size={15} />
-              <span>CS</span>
-            </a>
-
-            {/* Desktop Theme Toggle button */}
-            <button
-              onClick={onToggleTheme}
-              className="p-2.5 bg-zinc-950 hover:bg-zinc-850 text-yellow-500 rounded-xl border border-zinc-850 transition-all flex items-center justify-center active:scale-95"
-              title="Ubah Tema"
-            >
-              {isDarkMode ? <Sun size={15} /> : <Moon size={15} />}
-            </button>
-
-            {/* Developer Button */}
-            {(currentUser.role === 'developer' || currentUser.role === 'admin') && (
-              <button
-                onClick={() => onGoToTab('developer')}
-                className="hidden min-[580px]:block p-2.5 bg-amber-500/10 hover:bg-amber-500/25 text-yellow-500 border border-amber-500/30 rounded-xl transition-all"
-                title="Akses Administrator Hub"
-              >
-                <Shield size={16} className="fill-orange-500 stroke-orange-500" />
-              </button>
-            )}
 
           </div>
 
-          {/* User profile capsule (AS REQUESTED, STAYS VISIBLE ON MOBILE AT ALL COSTS IN NATIVE LAYOUT) */}
-          <div
-            onClick={() => onGoToTab('profile')}
-            className="flex items-center gap-2 bg-zinc-950 py-1.5 pl-1.5 pr-3.5 rounded-full border border-orange-500/50 hover:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-500 cursor-pointer transition-all select-none shadow-sm hover:shadow-orange-500/10"
-          >
-            <div className="w-8 h-8 rounded-full bg-zinc-850 border border-zinc-700 flex items-center justify-center font-black overflow-hidden relative text-xs">
-              {currentUser.profilePic ? (
-                <img src={currentUser.profilePic} className="w-full h-full object-cover" alt="" />
-              ) : (
-                currentUser.username.slice(0, 2).toUpperCase()
-              )}
-            </div>
-            
-            {/* Direct details wrapping elegantly */}
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1">
-                <span className="text-xs font-black text-zinc-100 max-w-20 truncate">
-                  {currentUser.username}
-                </span>
+          {/* Absolute Dropdown Overlay panel (Garis 3 Menu Options) */}
+          {isDropdownOpen && (
+            <>
+              {/* Overlay Backdrop to dismiss */}
+              <div 
+                className="fixed inset-0 z-40 cursor-default bg-transparent" 
+                onClick={() => setIsDropdownOpen(false)} 
+              />
+              <div className="absolute right-4 top-13 w-56 bg-zinc-950 border border-zinc-850 rounded-2xl shadow-2xl p-2 z-50 flex flex-col gap-1 anim-fade-in divide-y divide-zinc-900">
+                <div className="p-2 cursor-default select-none pb-1.5">
+                  <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest leading-none">Pengguna Aktif</p>
+                  <p className="text-xs font-bold text-zinc-300 truncate mt-1">{currentUser.username}</p>
+                </div>
                 
-                {currentUser.verified && (
-                  <span className="w-2.5 h-2.5 bg-[#1DA1F2] text-[6px] text-white font-black rounded-full flex items-center justify-center shrink-0" title="Terverifikasi">
-                    ✓
-                  </span>
-                )}
-                {currentUser.customRole && (
-                  <span className="text-[8px] bg-amber-500/20 text-yellow-400 font-extrabold px-1 py-0.2 rounded shrink-0">
-                    {currentUser.customRole}
-                  </span>
-                )}
-              </div>
-              <span className="text-[8px] text-zinc-500 font-extrabold tracking-widest uppercase">
-                {currentUser.role}
-              </span>
-            </div>
-          </div>
+                <div className="space-y-0.5 pt-1.5">
+                  {/* 1. Link Saweria (support) */}
+                  <a
+                    href="https://saweria.co/Waast"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setIsDropdownOpen(false)}
+                    className="flex items-center gap-2.5 px-3 py-2 hover:bg-zinc-900/50 text-zinc-300 hover:text-white rounded-xl text-xs font-semibold transition-colors"
+                  >
+                    <Heart size={13} className="text-red-500 fill-red-505" />
+                    <span>Support Saweria</span>
+                  </a>
 
-          {/* Quick exit cap */}
-          <button
-            onClick={onLogout}
-            className="hidden min-[580px]:block p-2 text-zinc-500 hover:text-red-400 bg-zinc-950 hover:bg-red-950/20 rounded-xl border border-zinc-900 transition-all font-bold"
-            title="Keluar / Ganti Akun"
-          >
-            <LogOut size={15} />
-          </button>
+                  {/* 2. Link Discord (Customer & service) */}
+                  <a
+                    href="https://discord.gg/kQPXrnSbuH"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setIsDropdownOpen(false)}
+                    className="flex items-center gap-2.5 px-3 py-2 hover:bg-zinc-900/50 text-zinc-300 hover:text-white rounded-xl text-xs font-semibold transition-colors"
+                  >
+                    <Headphones size={13} className="text-indigo-400" />
+                    <span>Discord Server (CS)</span>
+                  </a>
+
+                  {/* 3. Theme Toggle (Saves context; adaptive theme!) */}
+                  <button
+                    onClick={() => {
+                      onToggleTheme();
+                      setIsDropdownOpen(false);
+                    }}
+                    className="flex items-center gap-2.5 px-3 py-2 hover:bg-zinc-900/50 text-left w-full text-zinc-300 hover:text-white rounded-xl text-xs font-semibold transition-colors"
+                  >
+                    {isDarkMode ? (
+                      <>
+                        <Sun size={13} className="text-yellow-500" />
+                        <span>Mode Terang (Light)</span>
+                      </>
+                    ) : (
+                      <>
+                        <Moon size={13} className="text-indigo-455" />
+                        <span>Mode Gelap (Dark)</span>
+                      </>
+                    )}
+                  </button>
+
+                  {/* 4. Log Out */}
+                  <button
+                    onClick={() => {
+                      onLogout();
+                      setIsDropdownOpen(false);
+                    }}
+                    className="flex items-center gap-2.5 px-3 py-2 hover:bg-red-500/10 text-left w-full text-red-400 hover:text-red-300 rounded-xl text-xs font-black transition-colors"
+                  >
+                    <LogOut size={13} />
+                    <span>Keluar Akun</span>
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
 
         </div>
 
-      </div>
+      </header>
 
-    </nav>
+      {/* 2. PERSISTENT FLOATING BOTTOM NAV BAR (Perfect 5-Tab System as represented in Russian reference picture) */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/90 backdrop-blur-xl border-t border-zinc-900 shadow-[0_-10px_35px_rgba(0,0,0,0.85)] px-4 py-2 pb-5">
+        <div className="max-w-md mx-auto flex items-center justify-between gap-1">
+          
+          {/* TAP 1: HOME */}
+          <button
+            onClick={() => onGoToTab('home')}
+            className={`flex flex-col items-center justify-center py-1 flex-1 transition-all cursor-pointer ${
+              activeTab === 'home' && !activeProductId
+                ? 'text-primary scale-103 font-extrabold'
+                : 'text-zinc-500 hover:text-zinc-355 font-bold'
+            }`}
+          >
+            <Home size={18} className={activeTab === 'home' && !activeProductId ? 'text-primary' : 'text-zinc-500'} />
+            <span className="text-[8px] uppercase tracking-wide mt-1">Beranda</span>
+          </button>
+
+          {/* TAP 2: CHATS */}
+          <button
+            onClick={() => onGoToTab('chats')}
+            className={`flex flex-col items-center justify-center py-1 flex-1 relative transition-all cursor-pointer ${
+              activeTab === 'chats'
+                ? 'text-primary scale-103 font-extrabold'
+                : 'text-zinc-500 hover:text-zinc-355 font-bold'
+            }`}
+          >
+            <div className="relative">
+              <MessageSquare size={18} className={activeTab === 'chats' ? 'text-primary' : 'text-zinc-500'} />
+              {notificationCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-red-650 text-[7px] text-white font-black rounded-full flex items-center justify-center border border-zinc-950">
+                  {notificationCount}
+                </span>
+              )}
+            </div>
+            <span className="text-[8px] uppercase tracking-wide mt-1">Obrolan</span>
+          </button>
+
+          {/* TAP 3: SELL ITEM (`+` Icon nested inside circular button) */}
+          <button
+            onClick={() => onGoToTab('upload')}
+            className="flex flex-col items-center justify-center flex-1 py-1 group transition-all"
+          >
+            <div className={`p-1 rounded-full border transition-all cursor-pointer flex items-center justify-center ${
+              activeTab === 'upload'
+                ? 'bg-primary border-primary text-white scale-105 shadow-md shadow-blue-500/20'
+                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white group-hover:bg-zinc-850'
+            }`}>
+              <PlusCircle size={18} />
+            </div>
+            <span className={`text-[8px] uppercase tracking-wide mt-1 ${activeTab === 'upload' ? 'text-primary font-black' : 'text-zinc-500 font-bold'}`}>Jual</span>
+          </button>
+
+          {/* TAP 4: HISTORY */}
+          <button
+            onClick={() => onGoToTab('history')}
+            className={`flex flex-col items-center justify-center py-1 flex-1 transition-all cursor-pointer ${
+              activeTab === 'history'
+                ? 'text-primary scale-103 font-extrabold'
+                : 'text-zinc-500 hover:text-zinc-355 font-bold'
+            }`}
+          >
+            <History size={18} className={activeTab === 'history' ? 'text-primary' : 'text-zinc-500'} />
+            <span className="text-[8px] uppercase tracking-wide mt-1">Riwayat</span>
+          </button>
+
+          {/* TAP 5: PROFILE */}
+          <button
+            onClick={() => onGoToTab('profile')}
+            className={`flex flex-col items-center justify-center py-1 flex-1 transition-all cursor-pointer ${
+              activeTab === 'profile'
+                ? 'text-primary scale-103 font-extrabold'
+                : 'text-zinc-500 hover:text-zinc-355 font-bold'
+            }`}
+          >
+            <div className="relative">
+              <div className={`w-5 h-5 rounded-full overflow-hidden border flex items-center justify-center shrink-0 ${
+                activeTab === 'profile' ? 'border-primary' : 'border-zinc-700'
+              }`}>
+                {currentUser.profilePic ? (
+                  <img src={currentUser.profilePic} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+                ) : (
+                  <UserIcon size={11} className="text-zinc-500" />
+                )}
+              </div>
+            </div>
+            <span className="text-[8px] uppercase tracking-wide mt-1">Profil</span>
+          </button>
+
+        </div>
+      </div>
+    </>
   );
 };

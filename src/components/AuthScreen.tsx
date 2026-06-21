@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { User } from '../types';
-import { SVGLogo } from './SVGLogo';
+import { SVGLogo, WastWordmark } from './SVGLogo';
 import { Eye, EyeOff, Lock, User as UserIcon, Shield, Camera, Key } from 'lucide-react';
 
 interface AuthScreenProps {
@@ -55,13 +55,31 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       return;
     }
 
+    // Guarantee that logging in with "Developer" and "123" always works,
+    // even if local state / remote database is empty or laggy.
+    if (u.toLowerCase() === 'developer' && password === '123') {
+      const devExist = users.find((x) => x.id === 'u1' || x.username.toLowerCase() === 'developer');
+      const devUser: User = devExist || {
+        id: 'u1',
+        username: 'Developer',
+        password: '123',
+        pin: '0506',
+        role: 'developer',
+        customRole: 'Owner',
+        verified: true,
+        profilePic: null,
+      };
+      onLoginSuccess(devUser);
+      return;
+    }
+
     const found = users.find(
       (x) => x.username.toLowerCase() === u.toLowerCase() && x.password === password
     );
 
     if (found) {
       if (found.isBanned) {
-        triggerToast('Akun Anda telah dibanned dari platform SANS VICTIM oleh Developer!', true);
+        triggerToast('Akun Anda telah dibanned dari platform WAST oleh Developer!', true);
         return;
       }
       onLoginSuccess(found);
@@ -165,10 +183,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
         {/* Head branding */}
         <div className="flex flex-col items-center text-center mt-3 mb-8">
-          <SVGLogo size={74} className="mb-4" />
-          <h1 className="text-3xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-200 to-zinc-400">
-            SANS VICTIM
-          </h1>
+          <SVGLogo size={80} variant="bear" className="mb-3" />
+          <WastWordmark size="xl" className="mb-1" />
           <p className="text-xs text-zinc-400 font-bold tracking-widest uppercase mt-1">
             Premium Games & Items Marketplace
           </p>
@@ -436,7 +452,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       </div>
 
       <div className="text-center mt-6 text-[11px] text-zinc-650">
-        &copy; 100% Secure Transaction System - Powered by <span className="font-extrabold text-primary">SANS VICTIM</span>
+        &copy; 100% Secure Transaction System - Powered by <span className="font-extrabold text-primary">WAST</span>
       </div>
     </div>
   );
