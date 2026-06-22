@@ -15,6 +15,7 @@ interface ProfilePanelProps {
   onDeleteProduct: (productId: number) => void;
   onLogout?: () => void;
   onGoToTab?: (tab: 'home' | 'history' | 'profile' | 'developer' | 'upload' | 'chats' | 'stores') => void;
+  onSwitchAccount?: () => void;
 }
 
 export const ProfilePanel: React.FC<ProfilePanelProps> = ({
@@ -25,6 +26,7 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({
   onDeleteProduct,
   onLogout,
   onGoToTab,
+  onSwitchAccount,
 }) => {
   const [username, setUsername] = useState(currentUser.username);
   const [password, setPassword] = useState('');
@@ -93,79 +95,112 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({
       <div className="w-full lg:w-96 shrink-0 bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-xl space-y-6">
         <div className="border-b border-zinc-800 pb-3 flex items-center gap-2">
           <Settings size={18} className="text-primary" />
-          <h2 className="font-extrabold text-zinc-100 text-lg">Edit Profil Toko</h2>
+          <h2 className="font-extrabold text-zinc-100 text-lg">
+            {currentUser.id === 'u_guest' ? 'Status Profil' : 'Edit Profil Toko'}
+          </h2>
         </div>
 
-        <form onSubmit={handleSave} className="space-y-4">
-          
-          {/* File input profile preview */}
-          <div className="flex flex-col items-center">
-            <div className="relative group w-24 h-24 rounded-full bg-zinc-950 border-2 border-dashed border-zinc-800 hover:border-primary flex items-center justify-center cursor-pointer overflow-hidden transition-all">
-              {profilePic ? (
-                <img src={profilePic} className="w-full h-full object-cover" alt="Profile avatar" />
+        {currentUser.id === 'u_guest' ? (
+          <div className="space-y-5 text-center py-4 bg-zinc-950/30 rounded-2xl border border-zinc-850 p-4">
+            <div className="always-keep-profile-dark w-20 h-20 rounded-full bg-zinc-950 border border-zinc-800 flex items-center justify-center overflow-hidden mx-auto shadow-inner relative group">
+              {currentUser.profilePic ? (
+                <img src={currentUser.profilePic} className="w-full h-full object-cover" alt="Guest" />
               ) : (
-                <span className="text-zinc-500 text-lg font-bold">
-                  {currentUser.username.slice(0, 2).toUpperCase()}
-                </span>
+                <UserIcon size={24} className="text-zinc-500" />
               )}
-              <div className="absolute inset-x-0 bottom-0 bg-black/60 py-1 flex justify-center items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <Camera size={12} className="text-white" />
+            </div>
+            
+            <div className="space-y-2">
+              <span className="bg-zinc-800 text-zinc-300 text-[9px] font-black uppercase px-2 py-1 rounded-md tracking-wider">
+                Profil Tamu
+              </span>
+              <h3 className="font-black text-white text-base mt-2">Masuk Sebagai Guest</h3>
+              <p className="text-[11px] text-zinc-400 leading-relaxed font-semibold">
+                Anda sedang mencoba ekosistem WAST dalam mode tinjau. Daftar atau masuk menggunakan akun penjual resmi untuk memposting dagangan Anda sendiri secara permanen!
+              </p>
+            </div>
+
+            {onSwitchAccount && (
+              <button
+                type="button"
+                onClick={onSwitchAccount}
+                className="w-full bg-primary hover:bg-primary-hover text-white py-3 rounded-xl font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <UserIcon size={14} />
+                Masuk / Daftar Akun Resmi
+              </button>
+            )}
+          </div>
+        ) : (
+          <form onSubmit={handleSave} className="space-y-4">
+            
+            {/* File input profile preview */}
+            <div className="flex flex-col items-center">
+              <div className="always-keep-profile-dark relative group w-24 h-24 rounded-full bg-zinc-950 border-2 border-dashed border-zinc-800 hover:border-primary flex items-center justify-center cursor-pointer overflow-hidden transition-all">
+                {profilePic ? (
+                  <img src={profilePic} className="w-full h-full object-cover" alt="Profile avatar" />
+                ) : (
+                  <span className="text-zinc-500 text-lg font-bold">
+                    {currentUser.username.slice(0, 2).toUpperCase()}
+                  </span>
+                )}
+                <div className="absolute inset-x-0 bottom-0 bg-black/60 py-1 flex justify-center items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Camera size={12} className="text-white" />
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfilePicChange}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  title="Ganti Foto Profil"
+                />
               </div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleProfilePicChange}
-                className="absolute inset-0 opacity-0 cursor-pointer"
-                title="Ganti Foto Profil"
-              />
+              <span className="text-[10px] text-zinc-500 font-bold mt-2">Dukung JPG/PNG (Maks 1MB)</span>
             </div>
-            <span className="text-[10px] text-zinc-500 font-bold mt-2">Dukung JPG/PNG (Maks 1MB)</span>
-          </div>
 
-          {/* Username string */}
-          <div className="space-y-1">
-            <label className="text-xs text-zinc-400 font-bold">Username Akun</label>
-            <div className="relative">
-              <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
-              <input
-                type="text"
-                required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-850 rounded-xl py-2.5 pl-10 pr-4 text-xs sm:text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-primary transition-all font-semibold"
-              />
+            {/* Username string */}
+            <div className="space-y-1">
+              <label className="text-xs text-zinc-400 font-bold">Username Akun</label>
+              <div className="relative">
+                <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
+                <input
+                  type="text"
+                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-850 rounded-xl py-2.5 pl-10 pr-4 text-xs sm:text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-primary transition-all font-semibold"
+                />
+              </div>
             </div>
-          </div>
 
-
-
-          {/* Password update String */}
-          <div className="space-y-1">
-            <div className="flex justify-between items-center">
-              <label className="text-xs text-zinc-400 font-bold">Ubah Sandi Baru</label>
-              <span className="text-[10px] text-zinc-500 font-bold">Kosongkan jika tetap</span>
+            {/* Password update String */}
+            <div className="space-y-1">
+              <div className="flex justify-between items-center">
+                <label className="text-xs text-zinc-400 font-bold">Ubah Sandi Baru</label>
+                <span className="text-[10px] text-zinc-500 font-bold">Kosongkan jika tetap</span>
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Buat sandi baru (Aman)"
+                  className="w-full bg-zinc-950 border border-zinc-850 rounded-xl py-2.5 pl-10 pr-4 text-xs sm:text-sm text-zinc-100 placeholder-zinc-650 outline-none focus:border-primary transition-all font-mono"
+                />
+              </div>
             </div>
-            <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Buat sandi baru (Aman)"
-                className="w-full bg-zinc-950 border border-zinc-850 rounded-xl py-2.5 pl-10 pr-4 text-xs sm:text-sm text-zinc-100 placeholder-zinc-650 outline-none focus:border-primary transition-all font-mono"
-              />
-            </div>
-          </div>
 
-          <button
-            type="submit"
-            className="w-full bg-primary hover:bg-primary-hover text-white py-3 rounded-xl font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5"
-          >
-            <Save size={16} />
-            Simpan Perubahan Profil
-          </button>
+            <button
+              type="submit"
+              className="w-full bg-primary hover:bg-primary-hover text-white py-3 rounded-xl font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5"
+            >
+              <Save size={16} />
+              Simpan Perubahan Profil
+            </button>
 
-        </form>
+          </form>
+        )}
 
         {(currentUser.role === 'developer' || currentUser.role === 'admin') && onGoToTab && (
           <div className="pt-2 border-t border-zinc-500/10">
@@ -180,7 +215,7 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({
           </div>
         )}
 
-        {onLogout && (
+        {currentUser.id !== 'u_guest' && onLogout && (
           <div className="pt-2 border-t border-zinc-850">
             <button
               type="button"
@@ -213,7 +248,7 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({
                 className="p-4 bg-zinc-950/70 border border-zinc-850 hover:border-zinc-700 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-250"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-zinc-900 border border-zinc-850 rounded-xl overflow-hidden shrink-0 flex items-center justify-center bg-black">
+                  <div className="w-16 h-16 border border-zinc-850 rounded-xl overflow-hidden shrink-0 flex items-center justify-center bg-black keep-bg-dark">
                     {isVideoUrl(p.images[0]) ? (
                       <video src={p.images[0]} className="w-full h-full object-cover pointer-events-none" muted playsInline />
                     ) : (

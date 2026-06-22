@@ -551,11 +551,7 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
                     </td>
                     <td className="p-3 font-bold text-zinc-300">{p.stock}</td>
                     <td className="p-3">
-                      {currentUser.role === 'developer' ? (
-                        <span className="text-[9.5px] text-zinc-500 font-bold bg-zinc-900/60 px-2 py-1 rounded-md border border-zinc-850/50 select-none cursor-not-allowed" title="Developer tidak diizinkan menghapus listing jualan langsung.">
-                          🔒 Terkunci (Dev)
-                        </span>
-                      ) : deleteConfirmId === p.id ? (
+                      {deleteConfirmId === p.id ? (
                         <div className="flex items-center gap-1">
                           <span className="text-[8px] text-red-450 font-extrabold uppercase">Hapus?</span>
                           <button
@@ -1195,33 +1191,6 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
                   Logo ini akan menggantikan semua ikon di login screen, navbar, splash loading, dan footer.
                 </p>
               </div>
-            </div>
-          </div>
-
-          {/* DATABASE CLEAN ENGINE (RESET SEMUA KE 0 KECUALI USER) */}
-          <div className="bg-red-950/10 border border-red-900/35 p-5 rounded-2xl space-y-4 mt-6">
-            <div className="flex items-center gap-2 text-red-400">
-              <AlertCircle size={18} className="animate-pulse" />
-              <h4 className="font-black text-xs uppercase tracking-tight">Pembersihan Massal & Reset Data Platform (BETA)</h4>
-            </div>
-            <p className="text-[10.5px] text-zinc-400 leading-normal font-semibold">
-              Fitur ini akan menghapus semua <strong className="text-zinc-200">Produk/Jualan</strong>, seluruh riwayat <strong className="text-zinc-200">Transaksi</strong>, serta semua obrolan <strong className="text-zinc-100">Chat</strong> di database Firestore, mengembalikan semuanya ke angka 0 secara instan & realtime. Pengguna/User akun tidak akan dihapus.
-            </p>
-            <div className="pt-1 flex">
-              <button
-                type="button"
-                onClick={() => {
-                  if (window.confirm('PERINGATAN: Apakah Anda yakin ingin menghapus semua Produk, Transaksi, dan Chat di platform ini? Tindakan ini tidak dapat dibatalkan!')) {
-                    if (onResetDatabase) {
-                      onResetDatabase();
-                    }
-                  }
-                }}
-                className="px-5 py-2.5 bg-red-650 hover:bg-red-600 text-white font-black text-[10.5px] uppercase rounded-xl tracking-wider transition-all cursor-pointer select-none active:scale-95 flex items-center gap-1.5 shadow-md shadow-red-950/50"
-              >
-                <Trash2 size={13} />
-                Hapus & Reset Semua Jualan, Transaksi & Chat (Jadikan 0)
-              </button>
             </div>
           </div>
         </div>

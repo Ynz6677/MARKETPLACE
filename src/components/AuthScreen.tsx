@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from '../types';
 import { SVGLogo, WastWordmark } from './SVGLogo';
 import { Eye, EyeOff, Lock, User as UserIcon, Shield, Camera, Key } from 'lucide-react';
@@ -22,6 +22,21 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  
+  // Responsive sizes
+  const [logoSize, setLogoSize] = useState(window.innerWidth < 640 ? 56 : 80);
+  const [wordmarkSize, setWordmarkSize] = useState<'lg' | 'xl'>(window.innerWidth < 640 ? 'lg' : 'xl');
+
+  useEffect(() => {
+    const handleResize = () => {
+      setLogoSize(window.innerWidth < 640 ? 56 : 80);
+      setWordmarkSize(window.innerWidth < 640 ? 'lg' : 'xl');
+    };
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
   
   // Registration States
   const [regUsername, setRegUsername] = useState('');
@@ -115,7 +130,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       role: 'user',
       customRole: 'New Seller',
       verified: false,
-      profilePic: profilePic,
+      profilePic: profilePic || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80',
     };
 
     onRegisterSuccess(newUser);
@@ -176,23 +191,23 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       )}
 
       {/* Main card */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-2xl relative overflow-hidden keep-bg-dark">
         
         {/* Amber glow ring for aesthetic */}
         <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary via-amber-500 to-primary/80" />
 
         {/* Head branding */}
-        <div className="flex flex-col items-center text-center mt-3 mb-8">
-          <SVGLogo size={80} variant="bear" className="mb-3" />
-          <WastWordmark size="xl" className="mb-1" />
-          <p className="text-xs text-zinc-400 font-bold tracking-widest uppercase mt-1">
+        <div className="flex flex-col items-center text-center mt-1 sm:mt-3 mb-4 sm:mb-8">
+          <SVGLogo size={logoSize} variant="bear" className="mb-2 sm:mb-3" />
+          <WastWordmark size={wordmarkSize} className="mb-1" />
+          <p className="text-[10px] sm:text-xs text-zinc-400 font-bold tracking-widest uppercase mt-0.5 sm:mt-1">
             Premium Games & Items Marketplace
           </p>
         </div>
 
         {/* Tabs */}
         {!isForgotOpen && (
-          <div className="flex bg-zinc-950 p-1 rounded-xl mb-6 border border-zinc-900">
+          <div className="flex bg-zinc-950 p-1 rounded-xl mb-4 sm:mb-6 border border-zinc-900">
             <button
               onClick={() => setMode('login')}
               className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${
@@ -220,31 +235,31 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
         {isForgotOpen ? (
           <form onSubmit={handleFpSubmit} className="space-y-4">
             <div className="border-b border-zinc-800 pb-3 mb-3 text-center">
-              <h2 className="font-bold text-zinc-100">Pemulihan Akun</h2>
-              <p className="text-xs text-zinc-400 mt-1">Gunakan PIN 4 angka rahasia Anda</p>
+              <h2 className="font-bold text-zinc-100 text-sm sm:text-base">Pemulihan Akun</h2>
+              <p className="text-[10px] sm:text-xs text-zinc-400 mt-1">Gunakan PIN 4 angka rahasia Anda</p>
             </div>
 
             {/* Username */}
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400 font-bold">Username Akun</label>
+              <label className="text-[10px] sm:text-xs text-zinc-400 font-bold">Username Akun</label>
               <div className="relative">
-                <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
+                <UserIcon className="absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 sm:scale-110" size={14} />
                 <input
                   type="text"
                   required
                   placeholder="Masukkan username Anda"
                   value={fpUsername}
                   onChange={(e) => setFpUsername(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 pl-11 pr-4 text-sm text-zinc-100 placeholder-zinc-650 outline-none focus:border-primary transition-all font-medium"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 sm:py-3 pl-9 sm:pl-11 pr-4 text-xs sm:text-sm text-zinc-100 placeholder-zinc-650 outline-none focus:border-primary transition-all font-medium"
                 />
               </div>
             </div>
 
             {/* PIN */}
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400 font-bold">PIN Pemulihan (4 Angka)</label>
+              <label className="text-[10px] sm:text-xs text-zinc-400 font-bold">PIN Pemulihan (4 Angka)</label>
               <div className="relative">
-                <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
+                <Key className="absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 sm:scale-110" size={14} />
                 <input
                   type="password"
                   required
@@ -252,30 +267,30 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   placeholder="0000"
                   value={fpPin}
                   onChange={(e) => setFpPin(e.target.value.replace(/\D/g, ''))}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 pl-11 pr-4 text-sm text-zinc-100 placeholder-zinc-650 outline-none focus:border-primary transition-all font-mono"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 sm:py-3 pl-9 sm:pl-11 pr-4 text-xs sm:text-sm text-zinc-100 placeholder-zinc-650 outline-none focus:border-primary transition-all font-mono"
                 />
               </div>
             </div>
 
             {/* New password */}
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400 font-bold">Sandi Password Baru</label>
+              <label className="text-[10px] sm:text-xs text-zinc-400 font-bold">Sandi Password Baru</label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
+                <Lock className="absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 sm:scale-110" size={14} />
                 <input
                   type="password"
                   required
                   placeholder="Buat sandi baru"
                   value={fpNewPass}
                   onChange={(e) => setFpNewPass(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 pl-11 pr-4 text-sm text-zinc-100 placeholder-zinc-650 outline-none focus:border-primary transition-all font-semibold"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 sm:py-3 pl-9 sm:pl-11 pr-4 text-xs sm:text-sm text-zinc-100 placeholder-zinc-650 outline-none focus:border-primary transition-all font-semibold"
                 />
               </div>
             </div>
 
             <button
               type="submit"
-              className="w-full bg-primary hover:bg-primary-hover text-white py-3 rounded-xl font-bold transition-all text-sm shadow-lg mt-4 active:scale-95"
+              className="w-full bg-primary hover:bg-primary-hover text-white py-2.5 sm:py-3 rounded-xl font-bold transition-all text-xs sm:text-sm shadow-lg mt-4 active:scale-95"
             >
               Reset Sandi Sekarang
             </button>
@@ -283,7 +298,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             <button
               type="button"
               onClick={() => setIsForgotOpen(false)}
-              className="w-full text-center text-xs text-zinc-400 hover:text-white font-bold transition-all mt-2"
+              className="w-full text-center text-[10px] sm:text-xs text-zinc-400 hover:text-white font-bold transition-all mt-2"
             >
               Kembali ke Login
             </button>
@@ -291,55 +306,55 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
         ) : mode === 'login' ? (
           
           /* MODE 1: LOGIN */
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form onSubmit={handleLogin} className="space-y-4">
             {/* Username Input */}
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400 font-bold">Username</label>
+              <label className="text-[10px] sm:text-xs text-zinc-400 font-bold">Username</label>
               <div className="relative">
-                <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
+                <UserIcon className="absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 sm:scale-110" size={14} />
                 <input
                   type="text"
                   required
                   placeholder="Masukkan username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 pl-11 pr-4 text-sm text-zinc-100 placeholder-zinc-650 outline-none focus:border-primary transition-all font-medium"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 sm:py-3 pl-9 sm:pl-11 pr-4 text-xs sm:text-sm text-zinc-100 placeholder-zinc-650 outline-none focus:border-primary transition-all font-medium"
                 />
               </div>
             </div>
 
             {/* Password Input with fixed precision eye togglers */}
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400 font-bold">Password</label>
+              <label className="text-[10px] sm:text-xs text-zinc-400 font-bold">Password</label>
               <div className="relative flex items-center">
-                <Lock className="absolute left-3.5 text-zinc-500 pointer-events-none" size={16} />
+                <Lock className="absolute left-3 sm:left-3.5 text-zinc-500 pointer-events-none sm:scale-110" size={14} />
                 <input
                   type={showPassLogin ? 'text' : 'password'}
                   required
                   placeholder="Masukkan kata sandi"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 pl-11 pr-12 text-sm text-zinc-100 placeholder-zinc-650 outline-none focus:border-primary transition-all font-semibold"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 sm:py-3 pl-9 sm:pl-11 pr-10 sm:pr-12 text-xs sm:text-sm text-zinc-100 placeholder-zinc-650 outline-none focus:border-primary transition-all font-semibold"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassLogin(!showPassLogin)}
-                  className="absolute right-3.5 text-zinc-500 hover:text-primary transition-all p-1 rounded-md"
+                  className="absolute right-2.5 sm:right-3.5 text-zinc-500 hover:text-primary transition-all p-1 rounded-md"
                   title="Tampilkan Sandi"
                 >
-                  {showPassLogin ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showPassLogin ? <EyeOff size={14} className="sm:scale-110" /> : <Eye size={14} className="sm:scale-110" />}
                 </button>
               </div>
             </div>
 
             <button
               type="submit"
-              className="w-full bg-primary hover:bg-primary-hover text-white py-3.5 rounded-xl font-black text-sm transition-all shadow-lg shadow-primary/10 active:scale-95"
+              className="w-full bg-primary hover:bg-primary-hover text-white py-2.5 sm:py-3.5 rounded-xl font-black text-xs sm:text-sm transition-all shadow-lg shadow-primary/10 active:scale-95"
             >
               Masuk ke Marketplace
             </button>
 
-            <div className="flex justify-between text-xs font-bold pt-1">
+            <div className="flex justify-between text-[10px] sm:text-xs font-bold pt-1">
               <button
                 type="button"
                 onClick={() => setIsForgotOpen(true)}
@@ -356,12 +371,12 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             
             {/* PROFILE PICTURE FILE INPUT */}
             <div className="flex flex-col items-center">
-              <label className="text-xs text-zinc-400 font-bold mb-1.5 text-center">Foto Profil (Opsional)</label>
-              <div className="relative group w-20 h-20 rounded-full bg-zinc-950 border-2 border-dashed border-zinc-800 hover:border-primary flex items-center justify-center cursor-pointer overflow-hidden transition-all">
+              <label className="text-[10px] sm:text-xs text-zinc-400 font-bold mb-1.5 text-center">Foto Profil (Opsional)</label>
+              <div className="relative group w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-zinc-950 border border-dashed border-zinc-800 hover:border-primary flex items-center justify-center cursor-pointer overflow-hidden transition-all always-keep-profile-dark">
                 {profilePic ? (
                   <img src={profilePic} className="w-full h-full object-cover" alt="Preview" />
                 ) : (
-                  <Camera className="text-zinc-500 group-hover:text-primary transition-all" size={20} />
+                  <Camera className="text-zinc-500 group-hover:text-primary transition-all sm:scale-110" size={16} />
                 )}
                 <input
                   type="file"
@@ -375,52 +390,52 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
             {/* Username register */}
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400 font-bold">Buat Username Unik</label>
+              <label className="text-[10px] sm:text-xs text-zinc-400 font-bold">Buat Username Unik</label>
               <div className="relative">
-                <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
+                <UserIcon className="absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 sm:scale-110" size={14} />
                 <input
                   type="text"
                   required
                   placeholder="Contoh: SansSeller"
                   value={regUsername}
                   onChange={(e) => setRegUsername(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 pl-11 pr-4 text-sm text-zinc-100 placeholder-zinc-650 outline-none focus:border-primary transition-all font-medium"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 sm:py-3 pl-9 sm:pl-11 pr-4 text-xs sm:text-sm text-zinc-100 placeholder-zinc-650 outline-none focus:border-primary transition-all font-medium"
                 />
               </div>
             </div>
 
             {/* Password register with show/hide eye toggle */}
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400 font-bold">Kata Sandi Kuat</label>
+              <label className="text-[10px] sm:text-xs text-zinc-400 font-bold">Kata Sandi Kuat</label>
               <div className="relative flex items-center">
-                <Lock className="absolute left-3.5 text-zinc-500 pointer-events-none" size={16} />
+                <Lock className="absolute left-3 sm:left-3.5 text-zinc-500 pointer-events-none sm:scale-110" size={14} />
                 <input
                   type={showPassRegister ? 'text' : 'password'}
                   required
                   placeholder="Masukkan Password"
                   value={regPassword}
                   onChange={(e) => setRegPassword(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 pl-11 pr-12 text-sm text-zinc-100 placeholder-zinc-650 outline-none focus:border-primary transition-all font-semibold"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 sm:py-3 pl-9 sm:pl-11 pr-10 sm:pr-12 text-xs sm:text-sm text-zinc-100 placeholder-zinc-650 outline-none focus:border-primary transition-all font-semibold"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassRegister(!showPassRegister)}
-                  className="absolute right-3.5 text-zinc-500 hover:text-primary transition-all p-1 rounded-md"
+                  className="absolute right-2.5 sm:right-3.5 text-zinc-500 hover:text-primary transition-all p-1 rounded-md"
                   title="Toggle Sandi"
                 >
-                  {showPassRegister ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showPassRegister ? <EyeOff size={14} className="sm:scale-110" /> : <Eye size={14} className="sm:scale-110" />}
                 </button>
               </div>
             </div>
 
             {/* PIN register + show/hide eye toggle (AS REQUESTED: "pin nya ilang juga menu hide and see nya") */}
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400 font-bold flex justify-between">
+              <label className="text-[10px] sm:text-xs text-zinc-400 font-bold flex justify-between">
                 <span>PIN Pemulihan (4 Angka Rahasia)</span>
                 <span className="text-amber-500 opacity-80">(Penting untuk Lupa Sandi)</span>
               </label>
               <div className="relative flex items-center">
-                <Shield className="absolute left-3.5 text-zinc-500 pointer-events-none" size={16} />
+                <Shield className="absolute left-3 sm:left-3.5 text-zinc-500 pointer-events-none sm:scale-110" size={14} />
                 <input
                   type={showPinRegister ? 'text' : 'password'}
                   required
@@ -428,22 +443,22 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   placeholder="Contoh: 8899"
                   value={regPin}
                   onChange={(e) => setRegPin(e.target.value.replace(/\D/g, ''))}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 pl-11 pr-12 text-sm text-zinc-105 placeholder-zinc-650 font-mono tracking-widest outline-none focus:border-primary transition-all"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 sm:py-3 pl-9 sm:pl-11 pr-10 sm:pr-12 text-xs sm:text-sm text-zinc-105 placeholder-zinc-650 font-mono tracking-widest outline-none focus:border-primary transition-all"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPinRegister(!showPinRegister)}
-                  className="absolute right-3.5 text-zinc-500 hover:text-primary transition-all p-1 rounded-md"
+                  className="absolute right-2.5 sm:right-3.5 text-zinc-500 hover:text-primary transition-all p-1 rounded-md"
                   title="Toggle PIN"
                 >
-                  {showPinRegister ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showPinRegister ? <EyeOff size={14} className="sm:scale-110" /> : <Eye size={14} className="sm:scale-110" />}
                 </button>
               </div>
             </div>
 
             <button
               type="submit"
-              className="w-full bg-primary hover:bg-primary-hover text-white py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg active:scale-95 mt-4"
+              className="w-full bg-primary hover:bg-primary-hover text-white py-2.5 sm:py-3.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-lg active:scale-95 mt-4"
             >
               Buat Akun & Masuk Pasar
             </button>

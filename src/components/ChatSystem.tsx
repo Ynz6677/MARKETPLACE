@@ -5,7 +5,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { User, ChatMessage, Product } from '../types';
-import { Send, Image, MessageSquare, Shield, X, AlertCircle, Video, Paperclip } from 'lucide-react';
+import { Send, Image, MessageSquare, Shield, X, AlertCircle, Video, Paperclip, Download } from 'lucide-react';
 
 interface ChatSystemProps {
   currentUser: User;
@@ -41,6 +41,16 @@ export const ChatSystem: React.FC<ChatSystemProps> = ({
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const handleDownloadMedia = (mediaData: string, filename: string) => {
+    // Standard secure downloader for image / video data blobs
+    const link = document.createElement('a');
+    link.href = mediaData;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   useEffect(() => {
     setLocalStorefrontUserId(null);
@@ -293,53 +303,53 @@ export const ChatSystem: React.FC<ChatSystemProps> = ({
         {selectedChatId ? (
           <>
             {/* Chat header */}
-            <div className="p-2 border-b border-zinc-800 bg-zinc-900 flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="p-2 border-b border-zinc-800 bg-zinc-900 flex items-center justify-between min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
                 <button
                   onClick={() => setSelectedChatId(null)}
-                  className="md:hidden text-zinc-400 hover:text-white mr-1 text-[11px] font-bold flex items-center gap-0.5"
+                  className="md:hidden text-zinc-400 hover:text-white mr-1 text-[11px] font-bold flex items-center gap-0.5 shrink-0"
                 >
                   &larr; Inbox
                 </button>
                 
                 <div 
-                  className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                  className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity min-w-0"
                   onClick={() => partnerUser && setLocalStorefrontUserId(partnerUser.id)}
                   title="Klik untuk melihat apa yang dijual user ini"
                 >
-                  <div className="w-7.5 h-7.5 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center font-bold text-zinc-200 overflow-hidden transition-transform active:scale-95 hover:border-primary">
+                  <div className="w-7.5 h-7.5 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center font-bold text-zinc-200 overflow-hidden transition-transform active:scale-95 hover:border-primary shrink-0">
                     {partnerUser?.profilePic ? (
                       <img src={partnerUser.profilePic} className="w-full h-full object-cover" alt="" />
                     ) : (
                       partnerUser?.username?.slice(0, 2).toUpperCase() || 'SV'
                     )}
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <div className="font-extrabold text-[11.5px] text-zinc-100 flex items-center gap-1 hover:text-primary transition-colors">
-                      {partnerUser?.username || 'User'}
+                      <span className="truncate">{partnerUser?.username || 'User'}</span>
                       {partnerUser?.verified && (
                         <span className="inline-flex items-center justify-center bg-[#1DA1F2] text-white rounded-full w-3 h-3 text-[7.5px] font-black shrink-0" title="Terverifikasi">
                           ✓
                         </span>
                       )}
                       {partnerUser?.customRole && (
-                        <span className="text-[7px] bg-amber-500/20 text-yellow-400 font-extrabold px-1 py-0.2 rounded">
+                        <span className="text-[7px] bg-amber-500/20 text-yellow-400 font-extrabold px-1 py-0.2 rounded shrink-0 truncate max-w-[80px] sm:max-w-[120px]">
                           {partnerUser.customRole}
                         </span>
                       )}
                     </div>
                     {activeProduct && (
-                      <span className="text-[9px] text-zinc-450 line-clamp-1 leading-none mt-0.5">
-                        Item: <span className="text-primary font-semibold">{activeProduct.title}</span>
+                      <span className="text-[9px] text-zinc-450 truncate block leading-none mt-0.5">
+                        Item: <span className="text-primary font-semibold truncate">{activeProduct.title}</span>
                       </span>
                     )}
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 shrink-0">
                 {onClose && (
-                  <button onClick={onClose} className="p-1 px-1.5 text-zinc-400 hover:text-white transition-all bg-zinc-800 rounded">
+                  <button onClick={onClose} className="p-1 px-1.5 text-zinc-400 hover:text-white transition-all bg-zinc-800 rounded shrink-0">
                     <X size={13} />
                   </button>
                 )}
@@ -376,14 +386,32 @@ export const ChatSystem: React.FC<ChatSystemProps> = ({
                       {msg.text && <p className="text-xs whitespace-pre-wrap leading-normal font-medium">{msg.text}</p>}
                       
                       {msg.image && (
-                        <div className="mt-1 rounded-lg overflow-hidden border border-black/20 max-w-[200px]">
+                        <div className="mt-1 rounded-lg overflow-hidden border border-black/20 max-w-[200px] relative group bg-zinc-950/20">
                           <img src={msg.image} className="w-full object-contain max-h-44" alt="Bukti Kirim" />
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadMedia(msg.image!, `wast_foto_${msg.id}.png`)}
+                            className="absolute bottom-1 right-1 px-2 py-1 bg-black/70 hover:bg-black text-white rounded-md transition-all flex items-center gap-1 text-[8.5px] font-black z-10 cursor-pointer shadow-md"
+                            title="Unduh Foto ke Perangkat"
+                          >
+                            <Download size={10} className="shrink-0" />
+                            <span>UNDUH</span>
+                          </button>
                         </div>
                       )}
 
                       {msg.video && (
-                        <div className="mt-1 rounded-lg overflow-hidden border border-black/20 max-w-[200px] bg-black">
+                        <div className="mt-1 rounded-lg overflow-hidden border border-black/20 max-w-[200px] bg-black relative group">
                           <video src={msg.video} className="w-full object-contain max-h-44 shadow-md" controls playsInline />
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadMedia(msg.video!, `wast_video_${msg.id}.mp4`)}
+                            className="absolute top-1 right-1 px-2 py-1 bg-black/70 hover:bg-black text-white rounded-md transition-all flex items-center gap-1 text-[8.5px] font-black z-20 cursor-pointer shadow-md"
+                            title="Unduh Video ke Perangkat"
+                          >
+                            <Download size={10} className="shrink-0" />
+                            <span>UNDUH</span>
+                          </button>
                         </div>
                       )}
                       
@@ -441,7 +469,7 @@ export const ChatSystem: React.FC<ChatSystemProps> = ({
                 e.preventDefault();
                 handleSend();
               }}
-              className="p-2 border-t border-zinc-800 bg-[#16161a] flex items-center gap-2"
+              className="p-2 sm:p-3 border-t border-zinc-800 bg-[#16161a] flex items-center gap-2 sm:gap-3"
             >
               <input
                 type="file"
@@ -453,11 +481,11 @@ export const ChatSystem: React.FC<ChatSystemProps> = ({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="p-1.5 text-zinc-400 hover:text-primary hover:bg-zinc-800/80 rounded-lg transition-all duration-200 shrink-0 flex items-center justify-center relative group"
+                className="p-1.5 sm:p-2 text-zinc-400 hover:text-primary hover:bg-zinc-800/80 rounded-xl transition-all duration-200 shrink-0 flex items-center justify-center relative group"
                 title="Kirim Bukti Pembayaran / Video / Gambar"
               >
-                <Paperclip size={16} className="text-zinc-450 group-hover:text-primary transition-colors duration-200" />
-                <span className="absolute top-0.5 right-0.5 flex h-1.5 w-1.5">
+                <Paperclip size={18} className="text-zinc-450 group-hover:text-primary transition-colors duration-200" />
+                <span className="absolute top-1 right-1 flex h-1.5 w-1.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary"></span>
                 </span>
@@ -468,12 +496,12 @@ export const ChatSystem: React.FC<ChatSystemProps> = ({
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 placeholder="Tulis pesan..."
-                className="flex-1 bg-[#101014] border border-zinc-850 text-zinc-100 rounded-lg px-3 py-1.8 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all placeholder-zinc-500 font-medium"
+                className="flex-1 min-w-0 w-full bg-[#101014] border border-zinc-850 text-zinc-100 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all placeholder-zinc-500 font-medium"
               />
 
               <button
                 type="submit"
-                className="p-1.5 bg-primary hover:bg-primary-hover text-white rounded-lg transition-all duration-250 shadow-md shadow-primary/10 hover:shadow-primary/20 active:scale-95 shrink-0 flex items-center justify-center"
+                className="p-2 sm:p-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl transition-all duration-250 shadow-md shadow-primary/10 hover:shadow-primary/20 active:scale-95 shrink-0 flex items-center justify-center"
                 title="Kirim Pesan"
               >
                 <Send size={14} className="transform hover:translate-x-0.5 transition-transform" />
@@ -557,8 +585,8 @@ export const ChatSystem: React.FC<ChatSystemProps> = ({
                           <img src={p.images[0]} className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300" alt="" referrerPolicy="no-referrer" />
                         )}
                         {p.stock === 0 && (
-                          <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
-                            <span className="text-[8px] bg-red-650 px-1 rounded text-white font-black">LUDES</span>
+                          <div className="absolute inset-0 keep-sold-out-overlay flex items-center justify-center z-10">
+                            <span className="text-[8px] keep-sold-out-badge px-1.5 py-0.5 rounded font-black uppercase tracking-wider shadow-sm">LUDES</span>
                           </div>
                         )}
                       </div>

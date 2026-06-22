@@ -88,6 +88,7 @@ export const SVGLogo: React.FC<SVGLogoProps> = ({ className = '', size = 32, var
         {/* Shield background with premium stroke */}
         <polygon
           points="50,5 92,25 92,75 50,95 8,75 8,25"
+          className="logo-shield-bg"
           fill="url(#shieldGrad)"
           stroke="#0084ff"
           strokeWidth="3.5"
@@ -97,6 +98,7 @@ export const SVGLogo: React.FC<SVGLogoProps> = ({ className = '', size = 32, var
         {/* Neon cyan inner glowing line */}
         <polygon
           points="50,10 87,28 87,72 50,90 13,72 13,28"
+          className="logo-shield-inner"
           stroke="#00E5FF"
           strokeWidth="1.2"
           strokeLinejoin="round"

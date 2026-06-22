@@ -219,7 +219,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       </header>
 
       {/* 2. PERSISTENT FLOATING BOTTOM NAV BAR (Perfect 5-Tab System as represented in Russian reference picture) */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/90 backdrop-blur-xl border-t border-zinc-900 shadow-[0_-10px_35px_rgba(0,0,0,0.85)] px-4 py-2 pb-5">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/90 backdrop-blur-xl border-t border-black px-4 py-2 pb-5">
         <div className="max-w-md mx-auto flex items-center justify-between gap-1">
           
           {/* TAP 1: HOME */}
@@ -260,10 +260,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => onGoToTab('upload')}
             className="flex flex-col items-center justify-center flex-1 py-1 group transition-all"
           >
-            <div className={`p-1 rounded-full border transition-all cursor-pointer flex items-center justify-center ${
+            <div className={`p-1 rounded-full transition-all cursor-pointer flex items-center justify-center ${
               activeTab === 'upload'
-                ? 'bg-primary border-primary text-white scale-105 shadow-md shadow-blue-500/20'
-                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white group-hover:bg-zinc-850'
+                ? 'bg-transparent border-[2.5px] border-primary text-primary scale-105 shadow-md'
+                : 'bg-transparent border-[2.5px] border-zinc-800 text-zinc-400 hover:text-white group-hover:border-zinc-700'
             }`}>
               <PlusCircle size={18} />
             </div>
@@ -293,7 +293,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <div className="relative">
-              <div className={`w-5 h-5 rounded-full overflow-hidden border flex items-center justify-center shrink-0 ${
+              <div className={`always-keep-profile-dark w-5 h-5 rounded-full overflow-hidden border flex items-center justify-center shrink-0 ${
                 activeTab === 'profile' ? 'border-primary' : 'border-zinc-700'
               }`}>
                 {currentUser.profilePic ? (

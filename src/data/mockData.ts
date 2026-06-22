@@ -9,7 +9,7 @@ export const INITIAL_USERS: User[] = [
     role: 'developer',
     customRole: 'Owner',
     verified: true,
-    profilePic: null,
+    profilePic: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80',
   },
   {
     id: 'u2',
@@ -19,7 +19,7 @@ export const INITIAL_USERS: User[] = [
     role: 'user',
     customRole: 'Trusted',
     verified: true,
-    profilePic: null,
+    profilePic: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80',
   },
   {
     id: 'u3',
@@ -29,7 +29,7 @@ export const INITIAL_USERS: User[] = [
     role: 'user',
     customRole: '',
     verified: false,
-    profilePic: null,
+    profilePic: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80',
   }
 ];
 

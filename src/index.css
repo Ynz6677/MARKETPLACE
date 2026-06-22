@@ -117,6 +117,57 @@ html:not(.dark) [class*="text-zinc-6"] {
   color: #4b5563 !important;
 }
 
+/* Status colors and brand accent contrast preservation in Light Mode */
+html:not(.dark) .text-primary,
+html:not(.dark) [class*="text-[#0084ff]"] {
+  color: #0084ff !important;
+}
+html:not(.dark) .text-accent,
+html:not(.dark) [class*="text-accent"] {
+  color: #00e5ff !important;
+}
+html:not(.dark) .text-emerald-500,
+html:not(.dark) .text-green-500 {
+  color: #10b981 !important;
+}
+html:not(.dark) .text-red-500,
+html:not(.dark) .text-red-400 {
+  color: #ef4444 !important;
+}
+html:not(.dark) .text-amber-500,
+html:not(.dark) .text-yellow-500,
+html:not(.dark) .text-amber-400 {
+  color: #f59e0b !important;
+}
+
+/* Ensure buttons, active indicators, and explicit keep-text-white retain bright/white text color in light mode */
+html:not(.dark) button .text-white,
+html:not(.dark) button.bg-primary,
+html:not(.dark) button.bg-primary *,
+html:not(.dark) .bg-primary *,
+html:not(.dark) .bg-[#0084ff] *,
+html:not(.dark) .keep-text-white,
+html:not(.dark) .keep-text-white *,
+html:not(.dark) .bg-red-600,
+html:not(.dark) .bg-red-650,
+html:not(.dark) .bg-red-600 *,
+html:not(.dark) .bg-red-650 *,
+html:not(.dark) .keep-sold-out-badge,
+html:not(.dark) .keep-sold-out-badge * {
+  color: #ffffff !important;
+}
+
+html:not(.dark) .keep-bg-dark * {
+  color: #f3f4f6 !important;
+}
+html:not(.dark) .keep-bg-dark h1,
+html:not(.dark) .keep-bg-dark h2,
+html:not(.dark) .keep-bg-dark h3,
+html:not(.dark) .keep-bg-dark h5,
+html:not(.dark) .keep-bg-dark h6 {
+  color: #ffffff !important;
+}
+
 /* Overwrite borders for clean visual borders & lines in light theme */
 html:not(.dark) .border-zinc-800,
 html:not(.dark) .border-zinc-805,
@@ -166,6 +217,72 @@ html:not(.dark) .keep-text-zinc {
   color: #cbd5e1 !important;
 }
 
+/* Maintain dark backdrop for product image slots in Light Mode so transparent/light game assets stand out beautifully */
+html:not(.dark) .keep-bg-dark,
+html .keep-bg-dark,
+.keep-bg-dark {
+  background-color: #0d0d10 !important;
+  background: #0d0d10 !important;
+  border-color: #1e293b !important;
+}
+
+/* Ensure sold out overlay works beautifully with proper shading in both light & dark mode */
+html:not(.dark) .keep-sold-out-overlay,
+html .keep-sold-out-overlay,
+.keep-sold-out-overlay {
+  background-color: rgba(0, 0, 0, 0.75) !important;
+  background: rgba(0, 0, 0, 0.75) !important;
+}
+
+/* Keep sold out badges vibrantly red and highly legible against dark backgrounds */
+html:not(.dark) .keep-sold-out-badge,
+html .keep-sold-out-badge,
+.keep-sold-out-badge {
+  background-color: #ef4444 !important;
+  color: #ffffff !important;
+  font-weight: 900 !important;
+}
+
+/* Maintain logo contrast and readability across light/dark themes */
+.logo-shield-bg {
+  transition: fill 0.3s ease, stroke 0.3s ease;
+}
+html:not(.dark) .logo-shield-bg {
+  fill: #f1f5f9 !important; /* Premium light slate filling */
+  stroke: #0084ff !important;
+}
+html:not(.dark) .logo-shield-inner {
+  stroke: #00e5ff !important;
+  opacity: 0.55 !important;
+}
+
+/* Force icons and text inside primary/red/emerald buttons, inputs, and indicators to remain bright white in Light Mode */
+html:not(.dark) button.bg-primary svg,
+html:not(.dark) [class*="bg-primary"] svg,
+html:not(.dark) [class*="bg-[#0084ff]"] svg,
+html:not(.dark) .bg-emerald-500 svg,
+html:not(.dark) .bg-emerald-600 svg,
+html:not(.dark) .bg-red-500 svg,
+html:not(.dark) .bg-red-600 svg,
+html:not(.dark) .bg-red-650 svg,
+html:not(.dark) .keep-sold-out-badge svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+html:not(.dark) .bg-primary [class*="text-zinc-"],
+html:not(.dark) [class*="bg-primary"] [class*="text-zinc-"],
+html:not(.dark) [class*="bg-[#0084ff]"] [class*="text-zinc-"],
+html:not(.dark) .bg-emerald-500 [class*="text-zinc-"],
+html:not(.dark) .bg-emerald-600 [class*="text-zinc-"],
+html:not(.dark) .bg-red-500 [class*="text-zinc-"],
+html:not(.dark) .bg-red-650 [class*="text-zinc-"],
+html:not(.dark) .bg-red-600 [class*="text-zinc-"],
+html:not(.dark) .keep-text-white [class*="text-zinc-"],
+html:not(.dark) .keep-sold-out-badge [class*="text-zinc-"] {
+  color: #ffffff !important;
+}
+
 /* Custom scrollbars in light mode */
 html:not(.dark) ::-webkit-scrollbar-track {
   background: #f1f5f9;
@@ -193,3 +310,87 @@ html:not(.dark) ::-webkit-scrollbar-thumb:hover {
   background: #0084FF;
 }
 
+/* Ensure backgrounds and borders of default profile graphics always stay dark and beautiful with crisp white text / icons */
+.always-keep-profile-dark {
+  background-color: #09090b !important;
+  border-color: #27272a !important;
+  color: #ffffff !important;
+}
+.always-keep-profile-dark svg,
+.always-keep-profile-dark span,
+.always-keep-profile-dark .text-zinc-500,
+.always-keep-profile-dark [class*="text-zinc-"] {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+/* Ensure any cards/containers styled with keep-bg-dark keep their dark theme background, inputs, icons, borders, and white fonts in both light/dark */
+html:not(.dark) .keep-bg-dark,
+html:not(.dark) .always-keep-profile-dark {
+  background-color: #10121a !important; /* Constant premium slate/zinc dark color */
+  border-color: #1e293b !important;
+  color: #f3f4f6 !important;
+}
+
+/* Maintain light borders, white font colors, and clear contrast inside elements tagged with keep-bg-dark */
+html:not(.dark) .keep-bg-dark *,
+html:not(.dark) .always-keep-profile-dark * {
+  color: #f3f4f6 !important;
+}
+
+html:not(.dark) .keep-bg-dark input,
+html:not(.dark) .keep-bg-dark select,
+html:not(.dark) .keep-bg-dark textarea {
+  background-color: #090b11 !important;
+  color: #ffffff !important;
+  border-color: #1e293b !important;
+}
+
+html:not(.dark) .keep-bg-dark input::placeholder,
+html:not(.dark) .keep-bg-dark select::placeholder,
+html:not(.dark) .keep-bg-dark textarea::placeholder {
+  color: #64748b !important;
+}
+
+html:not(.dark) .keep-bg-dark border,
+html:not(.dark) .keep-bg-dark .border-zinc-800,
+html:not(.dark) .keep-bg-dark .border-zinc-850,
+html:not(.dark) .keep-bg-dark [class*="border-zinc-"] {
+  border-color: #1e293b !important;
+}
+
+html:not(.dark) .keep-bg-dark .bg-zinc-950,
+html:not(.dark) .keep-bg-dark [class*="bg-zinc-950"] {
+  background-color: #05070a !important;
+}
+
+html:not(.dark) .keep-bg-dark .text-primary,
+html:not(.dark) .always-keep-profile-dark .text-primary,
+html:not(.dark) .keep-bg-dark [class*="text-[#0084ff]"] {
+  color: #0084ff !important;
+}
+
+html:not(.dark) .keep-bg-dark .text-zinc-650,
+html:not(.dark) .keep-bg-dark .text-zinc-550,
+html:not(.dark) .keep-bg-dark .text-zinc-500,
+html:not(.dark) .keep-bg-dark .text-zinc-400 {
+  color: #94a3b8 !important;
+}
+
+html:not(.dark) .keep-bg-dark .text-zinc-100,
+html:not(.dark) .keep-bg-dark .text-zinc-200,
+html:not(.dark) .keep-bg-dark .text-zinc-300,
+html:not(.dark) .keep-bg-dark .text-white {
+  color: #ffffff !important;
+}
+
+/* Keep the branding color gradients and active tabs fixed inside keep-bg-dark */
+html:not(.dark) .keep-bg-dark .bg-primary {
+  background-color: #0084ff !important;
+}
+
+html:not(.dark) .keep-bg-dark svg,
+html:not(.dark) .always-keep-profile-dark svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}

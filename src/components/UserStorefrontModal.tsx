@@ -137,18 +137,18 @@ export const UserStorefrontModal: React.FC<UserStorefrontModalProps> = ({
                     className="group flex bg-zinc-900 border border-zinc-850 hover:border-primary/80 rounded-xl overflow-hidden cursor-pointer p-2 gap-2.5 transition-all duration-200"
                     title={`Klik untuk lihat detail ${p.title}`}
                   >
-                    <div className="w-14 h-14 bg-zinc-950 rounded overflow-hidden shrink-0 flex items-center justify-center relative">
+                    <div className="w-14 h-14 rounded overflow-hidden shrink-0 flex items-center justify-center relative keep-bg-dark">
                       {p.images && p.images.length > 0 && (
                         isVideoUrl(p.images[0]) ? (
                           <video src={p.images[0]} className="w-full h-full object-cover pointer-events-none animate-fade-in bg-black" muted playsInline />
                         ) : (
-                          <img src={p.images[0]} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200 bg-zinc-950" alt="" />
+                          <img src={p.images[0]} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" alt="" />
                         )
                       )}
                       
                       {isOut && (
-                        <div className="absolute inset-0 bg-black/85 flex items-center justify-center">
-                          <span className="px-1 py-0.2 bg-red-650 text-white font-extrabold text-[7px] rounded">HABIS</span>
+                        <div className="absolute inset-0 keep-sold-out-overlay flex items-center justify-center z-10">
+                          <span className="px-1.5 py-0.5 keep-sold-out-badge text-[7px] rounded uppercase tracking-wider shadow-sm">HABIS</span>
                         </div>
                       )}
                     </div>

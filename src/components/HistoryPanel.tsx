@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { Transaction, User, Product } from '../types';
-import { Clock, CheckSquare, XCircle, ShoppingBag, DollarSign, ExternalLink, RefreshCw, Download } from 'lucide-react';
+import { Clock, CheckSquare, XCircle, ShoppingBag, DollarSign, ExternalLink, RefreshCw, Download, Lock } from 'lucide-react';
 
 interface HistoryPanelProps {
   currentUser: User;
@@ -262,15 +262,26 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
                         Obrolan
                       </button>
 
-                      {/* Unduh Nota Transaksi */}
-                      <button
-                        onClick={() => handleDownloadReceipt(tx)}
-                        className="px-2 py-0.8 bg-zinc-900 hover:bg-zinc-800 text-amber-500 hover:text-amber-400 rounded-lg text-[9px] font-black transition-all border border-zinc-800 flex items-center gap-1 cursor-pointer"
-                        title="Unduh Nota Transaksi"
-                      >
-                        <Download size={10} />
-                        Nota
-                      </button>
+                      {/* Unduh Nota Transaksi (lock if not completed) */}
+                      {tx.status === 'completed' ? (
+                        <button
+                          onClick={() => handleDownloadReceipt(tx)}
+                          className="px-2 py-0.8 bg-zinc-900 hover:bg-zinc-800 text-amber-500 hover:text-amber-400 rounded-lg text-[9px] font-black transition-all border border-zinc-800 flex items-center gap-1 cursor-pointer"
+                          title="Unduh Nota Transaksi"
+                        >
+                          <Download size={10} />
+                          Nota
+                        </button>
+                      ) : (
+                        <button
+                          disabled
+                          className="px-2 py-0.8 bg-zinc-950 text-zinc-600 rounded-lg text-[9px] font-black border border-zinc-900/60 flex items-center gap-1 cursor-not-allowed opacity-50"
+                          title="Nota hanya tersedia jika transaksi telah selesai"
+                        >
+                          <Lock size={10} />
+                          Nota
+                        </button>
+                      )}
 
                       {/* SELLERS RESPONSE AREA FOR PENDING TRANSACTIONS (AS STRICTLY REQUESTED) */}
                       {!isBuyer && tx.status === 'waiting_confirmation' && (

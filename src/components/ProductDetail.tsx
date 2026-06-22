@@ -16,6 +16,9 @@ interface ProductDetailProps {
   onInitiateChat: (productId: number) => void;
   onOpenBuyModal: (product: Product) => void;
   onViewUserStorefront?: (userId: string) => void;
+  allProducts?: Product[];
+  onSelectProduct?: (productId: number) => void;
+  onDeleteProduct?: (productId: number) => void;
 }
 
 export const ProductDetail: React.FC<ProductDetailProps> = ({
@@ -27,10 +30,14 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
   onInitiateChat,
   onOpenBuyModal,
   onViewUserStorefront,
+  allProducts = [],
+  onSelectProduct,
+  onDeleteProduct,
 }) => {
   // Carousel index
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [showFullDesc, setShowFullDesc] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const isVideoUrl = (url?: string | null) => {
     return url?.startsWith('data:video/') || url?.match(/\.(mp4|webm|ogg|mov|mkv|3gp)(\?.*)?$/i);
@@ -60,6 +67,20 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
     return `${qty}`;
   };
 
+  // Recommendation / Related Products
+  const recommendations = (allProducts || [])
+    .filter((p) => p.id !== product.id && p.stock > 0) // exclude current product & only active stock
+    .filter((p) => p.category === product.category)    // same category
+    .slice(0, 4);                                      // maximum 4 products
+
+  const finalRecs = [...recommendations];
+  if (finalRecs.length < 4) {
+    const filler = (allProducts || [])
+      .filter((p) => p.id !== product.id && p.stock > 0 && !finalRecs.some((x) => x.id === p.id))
+      .slice(0, 4 - finalRecs.length);
+    finalRecs.push(...filler);
+  }
+
   return (
     <div className="space-y-6 animate-fade-in text-zinc-100">
       
@@ -79,7 +100,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
         
         {/* LEFT COLUMN: INTERACTIVE SLIDES IMAGE CAROUSEL */}
         <div className="space-y-4">
-          <div className="relative w-full aspect-[16/9] bg-zinc-950/25 overflow-hidden flex items-center justify-center bg-black/40">
+          <div className="relative w-full aspect-[16/9] overflow-hidden flex items-center justify-center bg-black/40 keep-bg-dark">
             
             {/* Soldout Badge overlay */}
             {isSoldOut && (
@@ -211,10 +232,28 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
               </span>
             </div>
 
+            {/* Description panel - placed above the logo as requested */}
+            <div className="space-y-1.5 mt-2">
+              <h3 className="text-xs text-zinc-500 font-black uppercase tracking-wider">Keterangan Produk</h3>
+              <div 
+                onClick={() => setShowFullDesc(true)}
+                className="cursor-pointer group/desc p-3 bg-zinc-950/40 hover:bg-zinc-950/60 border border-zinc-850 hover:border-zinc-750 rounded-xl transition-all"
+                title="Klik untuk melihat deskripsi lengkap"
+              >
+                <p className="text-[11px] text-zinc-405 leading-relaxed font-semibold line-clamp-2">
+                  {product.desc}
+                </p>
+                <div className="mt-1 flex items-center gap-1 text-[10px] text-[#0084ff] font-black uppercase tracking-widest">
+                  <span>LIHAT LENGKAP DETAILNYA</span>
+                  <span className="group-hover/desc:translate-x-0.5 transition-transform duration-200">&darr;</span>
+                </div>
+              </div>
+            </div>
+
             {/* Merchant / Seller profile box - borderless and backgroundless */}
             <div 
               onClick={() => onViewUserStorefront?.(seller.id)}
-              className="flex items-center gap-3 py-1 cursor-pointer transition-all duration-250 group/seller select-none"
+              className="flex items-center gap-3 py-2 cursor-pointer transition-all duration-250 group/seller select-none border-t border-zinc-850/30 mt-1"
               title={`Klik lihat seluruh jualan ${seller.username}`}
             >
               <div className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center font-black text-zinc-100 overflow-hidden shrink-0 group-hover/seller:border-[#0084ff] transition-all duration-200">
@@ -239,24 +278,6 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
                       {seller.customRole}
                     </span>
                   )}
-                </div>
-              </div>
-            </div>
-
-            {/* Description panel */}
-            <div className="space-y-2">
-              <h3 className="text-xs text-zinc-500 font-black uppercase tracking-wider">Keterangan Produk</h3>
-              <div 
-                onClick={() => setShowFullDesc(true)}
-                className="cursor-pointer group/desc p-3 bg-zinc-950/40 hover:bg-zinc-950/60 border border-zinc-850 hover:border-zinc-750 rounded-xl transition-all"
-                title="Klik untuk melihat deskripsi lengkap"
-              >
-                <p className="text-[11px] text-zinc-405 leading-relaxed font-semibold line-clamp-2">
-                  {product.desc}
-                </p>
-                <div className="mt-1 flex items-center gap-1 text-[10px] text-[#0084ff] font-black uppercase tracking-widest">
-                  <span>LIHAT LENGKAP DETAILNYA</span>
-                  <span className="group-hover/desc:translate-x-0.5 transition-transform duration-200">&darr;</span>
                 </div>
               </div>
             </div>
@@ -392,7 +413,97 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
                 </p>
               </div>
             )}
+
+            {/* DEVELOPER SPECIAL ACTION: DELETE POSTING */}
+            {currentUser?.role === 'developer' && onDeleteProduct && (
+              <div className="p-4 bg-red-950/10 border border-red-900/30 rounded-xl mt-3 flex flex-col gap-2">
+                <div className="flex items-center gap-1.5 text-red-500 text-xs font-black uppercase tracking-wider">
+                  <span className="w-1.5 h-3 bg-red-500 rounded-full animate-pulse" />
+                  Developer Action
+                </div>
+                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  Sebagai Developer / Owner, Anda memiliki akses penuh untuk menghapus postingan jualan ini secara langsung.
+                </p>
+                
+                {!isDeleting ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsDeleting(true)}
+                    className="w-full bg-red-650 hover:bg-red-700 text-white p-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-lg shadow-red-950/20 transition-all active:scale-95 cursor-pointer"
+                  >
+                    Hapus Postingan Ini
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsDeleting(false)}
+                      className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-350 p-2.5 rounded-xl text-xs font-black transition-all cursor-pointer"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onDeleteProduct(product.id);
+                        onBack();
+                      }}
+                      className="flex-1 bg-red-650 hover:bg-red-700 text-white p-2.5 rounded-xl text-xs font-black transition-all cursor-pointer animate-pulse"
+                    >
+                      Ya, Hapus!
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+
+          {/* Rekomendasi Produk Lainnya (Indonesian local layout) */}
+          {finalRecs.length > 0 && (
+            <div className="space-y-3 pt-6 border-t border-zinc-800">
+              <div className="flex items-center gap-1.5 justify-between">
+                <h3 className="text-xs text-zinc-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-1.5 h-3 bg-primary rounded-full" />
+                  Rekomendasi Produk Lainnya
+                </h3>
+                <span className="text-[9px] text-[#0084ff] font-black uppercase">Saran Populer</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {finalRecs.map((p) => {
+                  return (
+                    <div
+                      key={p.id}
+                      onClick={() => {
+                        onSelectProduct?.(p.id);
+                        // Reset slider on selection change
+                        setCurrentSlideIndex(0);
+                      }}
+                      className="bg-zinc-950/30 border border-zinc-900 hover:border-primary/40 rounded-xl p-2 cursor-pointer transition-all active:scale-98 flex flex-col justify-between group"
+                    >
+                      <div className="relative aspect-square rounded-lg overflow-hidden mb-1.5 border border-zinc-900 keep-bg-dark">
+                        {isVideoUrl(p.images[0]) ? (
+                          <video src={p.images[0]} className="w-full h-full object-cover" muted />
+                        ) : (
+                          <img src={p.images[0]} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt="" />
+                        )}
+                        <span className="absolute top-1 left-1 text-[7px] font-black bg-black/60 text-white px-1.5 py-0.5 rounded-md uppercase">
+                          {p.category}
+                        </span>
+                      </div>
+                      <div className="space-y-0.5">
+                        <h4 className="text-[10px] font-bold text-zinc-300 line-clamp-1 group-hover:text-primary transition-colors leading-tight">
+                          {p.title}
+                        </h4>
+                        <p className="text-[10px] font-black text-primary">
+                          {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(p.price)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
         </div>
 

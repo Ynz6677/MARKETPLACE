@@ -87,6 +87,7 @@ export default function App() {
 
   // Auth User Session State
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [forceAuthScreen, setForceAuthScreen] = useState(false);
   const [banner, setBanner] = useState<BannerConfig[]>([]);
 
   const liveUser = currentUser ? users.find((u) => u.id === currentUser.id) : null;
@@ -96,11 +97,77 @@ export default function App() {
     return src?.startsWith('data:video/') || src?.match(/\.(mp4|webm|ogg|mov|mkv|3gp)(\?.*)?$/i);
   };
 
+  // Notification References for push system
+  const appStartTime = useRef(Date.now());
+  const notifiedTxIds = useRef<Set<string>>(new Set());
+  const notifiedMsgIds = useRef<Set<string>>(new Set());
+  const latestUsersRef = useRef<User[]>([]);
+  const latestCurrentUserRef = useRef<User | null>(null);
+
+  // Sync state variables to refs on every render to ensure always fresh state in onSnapshot callbacks!
+  latestUsersRef.current = users;
+  latestCurrentUserRef.current = currentUser;
+
+  const playNotificationSound = () => {
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      
+      const playTone = (freq: number, startTime: number, duration: number, gainVal = 0.15) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, startTime);
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(gainVal, startTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      };
+
+      const now = ctx.currentTime;
+      // Beautiful notification chime melody (ascending C5 - E5 chime)
+      playTone(523.25, now, 0.15); // C5
+      playTone(659.25, now + 0.08, 0.25); // E5
+    } catch (error) {
+      console.warn('Audio Context failed inside playNotificationSound:', error);
+    }
+  };
+
+  const sendPushNotification = (title: string, body: string, onClick?: () => void) => {
+    playNotificationSound();
+    
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try {
+        const notif = new Notification(title, {
+          body,
+          icon: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80',
+          tag: 'wast-notification'
+        });
+        if (onClick) {
+          notif.onclick = () => {
+            window.focus();
+            if (typeof onClick === 'function') onClick();
+          };
+        }
+      } catch (e) {
+        console.warn('HTML5 Notification failed:', e);
+      }
+    }
+    
+    triggerToast(`${title}: ${body}`, 'info');
+  };
+
   // Active View Navigation Tab
   // 'home' | 'detail' | 'history' | 'profile' | 'developer' | 'upload' | 'chats' | 'stores'
   const [activeTab, setActiveTab] = useState<'home' | 'detail' | 'history' | 'profile' | 'developer' | 'upload' | 'chats' | 'stores'>('home');
   const [activeProductId, setActiveProductId] = useState<number | null>(null);
   const [overrideDevChatId, setOverrideDevChatId] = useState<string | null>(null);
+  const [isDraggingGoodsMedia, setIsDraggingGoodsMedia] = useState(false);
+  const productFileInputRef = useRef<HTMLInputElement>(null);
 
   // Search & Price & Sorting filters state
   const [searchQuery, setSearchQuery] = useState('');
@@ -211,6 +278,20 @@ export default function App() {
       } catch (e) {
         console.error(e);
       }
+    } else {
+      // PROFIL DEFAULT NYA GUNAKAN PROFIL GUEST
+      const guestProfile: User = {
+        id: 'u_guest',
+        username: 'Guest',
+        password: '',
+        pin: '0000',
+        role: 'user',
+        customRole: 'Guest',
+        verified: false,
+        profilePic: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+      };
+      setCurrentUser(guestProfile);
+      localStorage.setItem('sv_current_user', JSON.stringify(guestProfile));
     }
 
     // 2. Real-time synchronizations with Firestore
@@ -221,13 +302,19 @@ export default function App() {
       } else {
         setUsers(fetchedUsers);
         // Refresh session user if logged in to fetch latest badges/ban status
-        if (localUser) {
+        const activeLocal = localStorage.getItem('sv_current_user');
+        if (activeLocal) {
           try {
-            const parsed = JSON.parse(localUser) as User;
-            const fresh = fetchedUsers.find((u) => u.id === parsed.id);
-            if (fresh) {
-              setCurrentUser(fresh);
-              localStorage.setItem('sv_current_user', JSON.stringify(fresh));
+            const parsed = JSON.parse(activeLocal) as User;
+            if (parsed.id === 'u_guest') {
+              // Ensure guest profile stays as guest
+              setCurrentUser(parsed);
+            } else {
+              const fresh = fetchedUsers.find((u) => u.id === parsed.id);
+              if (fresh) {
+                setCurrentUser(fresh);
+                localStorage.setItem('sv_current_user', JSON.stringify(fresh));
+              }
             }
           } catch (e) {
             console.error(e);
@@ -263,7 +350,41 @@ export default function App() {
         saveMultipleTransactions(INITIAL_TRANSACTIONS).catch(console.error);
       } else {
         // Sort transactions by timestamp descending
-        setTransactions([...fetchedTxs].sort((a, b) => b.timestamp - a.timestamp));
+        const sorted = [...fetchedTxs].sort((a, b) => b.timestamp - a.timestamp);
+        setTransactions(sorted);
+
+        // Check for new transactions involving the logged-in user
+        const cUser = latestCurrentUserRef.current;
+        if (cUser) {
+          fetchedTxs.forEach((tx) => {
+            // Only notify if event occurred after application mounted/reloaded
+            if (tx.timestamp >= appStartTime.current && !notifiedTxIds.current.has(tx.id)) {
+              notifiedTxIds.current.add(tx.id);
+
+              if (tx.sellerId === cUser.id) {
+                // Current user is the seller
+                const buyerObj = latestUsersRef.current.find((u) => u.id === tx.buyerId);
+                const buyerName = buyerObj ? buyerObj.username : 'Pelanggan';
+                sendPushNotification(
+                  'Pesanan Baru Masuk! 🛒',
+                  `${buyerName} telah membeli ${tx.productName} sebanyak ${tx.qty} pcs!`,
+                  () => {
+                    setActiveTab('history');
+                  }
+                );
+              } else if (tx.buyerId === cUser.id) {
+                // Current user is the buyer
+                sendPushNotification(
+                  'Pembelian Sukses! 🎉',
+                  `Anda berhasil membeli ${tx.productName} sebanyak ${tx.qty} pcs. Silahkan tunggu konfirmasi penjual!`,
+                  () => {
+                    setActiveTab('history');
+                  }
+                );
+              }
+            }
+          });
+        }
       }
     });
 
@@ -272,6 +393,29 @@ export default function App() {
         saveMultipleChats(INITIAL_CHATS).catch(console.error);
       } else {
         setChats(fetchedChats);
+
+        // Check for incoming push chat messages for current user
+        const cUser = latestCurrentUserRef.current;
+        if (cUser) {
+          fetchedChats.forEach((msg) => {
+            if (msg.timestamp >= appStartTime.current && !notifiedMsgIds.current.has(msg.id)) {
+              notifiedMsgIds.current.add(msg.id);
+
+              // Notify if we are the recipient of the message
+              if (msg.receiverId === cUser.id) {
+                const senderObj = latestUsersRef.current.find((u) => u.id === msg.senderId);
+                const senderName = senderObj ? senderObj.username : 'Seseorang';
+                sendPushNotification(
+                  `Pesan baru dari ${senderName} 💬`,
+                  msg.text.length > 60 ? `${msg.text.slice(0, 60)}...` : msg.text,
+                  () => {
+                    setActiveTab('chats');
+                  }
+                );
+              }
+            }
+          });
+        }
       }
     });
 
@@ -304,10 +448,7 @@ export default function App() {
   const saveUsersToLocal = (newUsers: User[]) => {
     setUsers(newUsers);
     newUsers.forEach((u) => {
-      const match = users.find((x) => x.id === u.id);
-      if (!match || JSON.stringify(match) !== JSON.stringify(u)) {
-        saveUser(u).catch(console.error);
-      }
+      saveUser(u).catch(console.error);
     });
   };
 
@@ -347,36 +488,65 @@ export default function App() {
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
+    setForceAuthScreen(false);
     localStorage.setItem('sv_current_user', JSON.stringify(user));
     triggerToast(`Selamat datang kembali di WAST, ${user.username}!`, 'success');
     playIntroSound();
   };
 
-  const handleRegister = (newUser: User) => {
+  const handleRegister = async (newUser: User) => {
+    try {
+      await saveUser(newUser);
+    } catch (err) {
+      console.error(err);
+    }
     const updated = [...users, newUser];
-    saveUsersToLocal(updated);
+    setUsers(updated);
     setCurrentUser(newUser);
+    setForceAuthScreen(false);
     localStorage.setItem('sv_current_user', JSON.stringify(newUser));
     triggerToast(`Selamat datang di pasar WAST, ${newUser.username}!`, 'success');
     playIntroSound();
   };
 
   const handleLogout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem('sv_current_user');
+    const guestProfile: User = {
+      id: 'u_guest',
+      username: 'Guest',
+      password: '',
+      pin: '0000',
+      role: 'user',
+      customRole: 'Guest',
+      verified: false,
+      profilePic: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
+    };
+    setCurrentUser(guestProfile);
+    localStorage.setItem('sv_current_user', JSON.stringify(guestProfile));
     setActiveTab('home');
-    triggerToast('Anda telah keluar dari stasiun kasir.', 'info');
+    triggerToast('Anda telah keluar ke profil Guest.', 'info');
   };
 
   // Profile modification
-  const handleUpdateProfile = (updates: Partial<User>) => {
+  const handleUpdateProfile = async (updates: Partial<User>) => {
     if (!currentUser) return;
-    const updatedUser = { ...currentUser, ...updates };
+    const sanitizedUpdates = { ...updates };
+    if (sanitizedUpdates.profilePic === null) {
+      sanitizedUpdates.profilePic = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80';
+    }
+    const updatedUser = { ...currentUser, ...sanitizedUpdates };
     setCurrentUser(updatedUser);
     localStorage.setItem('sv_current_user', JSON.stringify(updatedUser));
 
-    const updatedUsersList = users.map((u) => (u.id === currentUser.id ? updatedUser : u));
-    saveUsersToLocal(updatedUsersList);
+    if (currentUser.id !== 'u_guest') {
+      try {
+        await saveUser(updatedUser);
+      } catch (err) {
+        console.error(err);
+      }
+
+      const updatedUsersList = users.map((u) => (u.id === currentUser.id ? updatedUser : u));
+      setUsers(updatedUsersList);
+    }
   };
 
   const handleRegisterAsSellerSubmit = (e: React.FormEvent) => {
@@ -1084,13 +1254,23 @@ export default function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6 pb-44">
         
         {/* LOGIN AND REGISTRATION ROUTER */}
-        {!currentUser ? (
+        {(!currentUser || forceAuthScreen) ? (
           <div className="py-12">
             <AuthScreen
               users={users}
               onLoginSuccess={handleLogin}
               onRegisterSuccess={handleRegister}
             />
+            {currentUser?.id === 'u_guest' && (
+              <div className="max-w-md mx-auto mt-6 text-center px-4 animate-fade-in">
+                <button
+                  onClick={() => setForceAuthScreen(false)}
+                  className="px-6 py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white rounded-xl text-xs font-bold tracking-tight transition-all cursor-pointer shadow-lg outline-none flex items-center justify-center gap-1.5 mx-auto"
+                >
+                  ← Tetap Menggunakan Akun Guest
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           
@@ -1245,10 +1425,10 @@ export default function App() {
                           setActiveProductId(p.id);
                           setActiveTab('detail');
                         }}
-                        className="group bg-[#131315] rounded-[18px] overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-lg flex flex-col justify-between"
+                        className="group bg-[#131315] rounded-[18px] border-[2.5px] border-zinc-900 overflow-hidden cursor-pointer transition-all duration-300 hover:border-zinc-800 hover:-translate-y-1 hover:shadow-lg flex flex-col justify-between"
                       >
                         {/* WIDESCREEN ASPECT IMAGE (Matches photo 1 style ratio) */}
-                        <div className="relative aspect-[16/9] w-full bg-zinc-950 overflow-hidden flex items-center justify-center bg-zinc-950">
+                        <div className="relative aspect-[16/9] w-full overflow-hidden flex items-center justify-center keep-bg-dark">
                           {p.images && p.images.length > 0 && (
                             isVideoVal(p.images[0]) ? (
                                <video
@@ -1268,8 +1448,8 @@ export default function App() {
                           )}
                           
                           {p.stock === 0 && (
-                            <div className="absolute inset-0 bg-black/85 flex items-center justify-center z-10">
-                              <span className="px-2.5 py-1 bg-red-650 text-white font-extrabold text-[9px] rounded-lg uppercase tracking-widest">
+                            <div className="absolute inset-0 keep-sold-out-overlay flex items-center justify-center z-10">
+                              <span className="px-2.5 py-1.5 keep-sold-out-badge rounded-lg text-[9px] uppercase tracking-widest leading-none shadow-md">
                                 SOLD OUT
                               </span>
                             </div>
@@ -1350,6 +1530,9 @@ export default function App() {
                   onInitiateChat={handleChatLaunch}
                   onOpenBuyModal={handleOpenBuyBox}
                   onViewUserStorefront={(userId) => setSelectedStorefrontUserId(userId)}
+                  allProducts={products}
+                  onSelectProduct={(productId) => setActiveProductId(productId)}
+                  onDeleteProduct={handleDeleteProduct}
                 />
               );
             })()}
@@ -1385,12 +1568,37 @@ export default function App() {
                   setActiveTab(tab);
                   setOverrideDevChatId(null);
                 }}
+                onSwitchAccount={() => setForceAuthScreen(true)}
               />
             )}
 
             {/* VIEW TAB 5: CREATIVE LISTING SALES FORMS */}
             {activeTab === 'upload' && (
-              currentUser.role !== 'seller' && currentUser.role !== 'admin' && currentUser.role !== 'developer' ? (
+              currentUser.id === 'u_guest' ? (
+                /* GUEST NOT ALLOWED TO UPLOAD GATED VIEW */
+                <div className="max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl relative text-center space-y-6">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-amber-500" />
+                  
+                  <div className="flex flex-col items-center text-center space-y-4 mb-3 pt-4">
+                    <div className="p-4 bg-primary/10 border border-primary/20 rounded-full text-primary shrink-0 animate-bounce">
+                      <ShoppingBag size={32} />
+                    </div>
+                    <h2 className="text-xl md:text-2xl font-black text-zinc-100 uppercase tracking-tight font-sans">
+                      Unggah / Jual Produk
+                    </h2>
+                    <p className="text-xs text-zinc-400 font-semibold leading-relaxed">
+                      Anda saat ini masuk menggunakan <span className="text-primary font-black">Profil Guest</span>. Untuk mulai menjual item game, Robux, akun, atau jasa di pasar WAST, Anda diwajibkan masuk ke akun penjual resmi terlebih dahulu.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => setForceAuthScreen(true)}
+                    className="w-full bg-primary hover:bg-primary-hover text-white py-3 rounded-xl font-black text-xs sm:text-sm tracking-tight transition-all active:scale-95 flex items-center justify-center gap-1.5 shadow-md mt-2 cursor-pointer"
+                  >
+                    Masuk atau Daftar Akun Sekarang
+                  </button>
+                </div>
+              ) : currentUser.role !== 'seller' && currentUser.role !== 'admin' && currentUser.role !== 'developer' ? (
                 /* SELLER REGISTRATION GATED VIEW */
                 <div className="max-w-md mx-auto bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl relative">
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#0084ff] to-[#0055ff]" />
@@ -1571,41 +1779,110 @@ export default function App() {
                     </div>
 
                     {/* Pictures uploading list */}
-                    <div className="border-t border-zinc-800 pt-4 space-y-2">
-                      <label className="text-xs text-zinc-400 font-bold flex justify-between items-center">
+                    <div className="border-t border-zinc-800 pt-5 space-y-3">
+                      <label className="text-xs text-zinc-400 font-bold flex justify-between items-center px-1">
                         <span>Unggah Gambar / Video Barang (Minimal 1)</span>
-                        <span className="text-[10px] text-zinc-500">Mendukung multi-upload (Gambar & Video)</span>
+                        <span className="text-[10px] text-zinc-500 font-semibold">Tipe: JPG, PNG, MP4, WEBM</span>
                       </label>
-                      <input
-                        type="file"
-                        accept="image/*,video/*"
-                        multiple
-                        onChange={handleProductUploadPics}
-                        className="w-full bg-zinc-950 border border-zinc-800 text-xs py-2 px-3 rounded-xl text-zinc-400 file:bg-zinc-800 file:border-0 file:rounded-md file:px-2.5 file:py-1 file:text-xs file:font-semibold file:text-zinc-100 hover:file:bg-primary transition-all cursor-pointer"
-                      />
+                      
+                      {/* Custom Drag and Drop Area */}
+                      <div
+                        onClick={() => productFileInputRef.current?.click()}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setIsDraggingGoodsMedia(true);
+                        }}
+                        onDragLeave={() => setIsDraggingGoodsMedia(false)}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          setIsDraggingGoodsMedia(false);
+                          const files = e.dataTransfer.files;
+                          if (files && files.length > 0) {
+                            const base64List = [...formImages];
+                            let filesProcessed = 0;
+                            for (let i = 0; i < files.length; i++) {
+                              const reader = new FileReader();
+                              reader.onload = (event) => {
+                                if (event.target?.result) {
+                                  base64List.push(event.target.result as string);
+                                }
+                                filesProcessed++;
+                                if (filesProcessed === files.length) {
+                                  setFormImages(base64List);
+                                }
+                              };
+                              reader.readAsDataURL(files[i]);
+                            }
+                          }
+                        }}
+                        className={`group relative flex flex-col items-center justify-center p-8 bg-zinc-950/40 border-2 border-dashed ${
+                          isDraggingGoodsMedia 
+                            ? 'border-primary bg-primary/5 shadow-lg shadow-primary/5' 
+                            : 'border-zinc-800 hover:border-zinc-700 hover:bg-zinc-950/80'
+                        } rounded-2xl cursor-pointer select-none transition-all duration-300 text-center space-y-3`}
+                      >
+                        <input
+                          ref={productFileInputRef}
+                          type="file"
+                          accept="image/*,video/*"
+                          multiple
+                          onChange={handleProductUploadPics}
+                          className="hidden"
+                        />
+                        
+                        <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 group-hover:border-zinc-700 flex items-center justify-center text-zinc-400 group-hover:text-primary transition-colors shadow-inner animate-pulse">
+                          <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <p className="text-xs text-zinc-200 font-bold">
+                            Seret & jatuhkan berkas di sini atau <span className="text-primary hover:underline">Klik untuk unggah</span>
+                          </p>
+                          <p className="text-[10px] text-zinc-500 font-semibold">
+                            Mendukung unggahan media sekaligus (Gambar & Video)
+                          </p>
+                        </div>
+                      </div>
 
-                      {/* Previews wrap container */}
+                      {/* Prominent high-fidelity custom thumbnails list */}
                       {formImages.length > 0 && (
-                        <div className="flex gap-2-flex-wrap pt-2 overflow-x-auto font-bold text-xs p-1">
-                          {formImages.map((img, index) => (
-                            <div key={index} className="relative w-16 h-16 rounded-xl overflow-hidden border border-zinc-850 shrink-0 select-none bg-black flex items-center justify-center">
-                              {isVideoVal(img) ? (
-                                <video src={img} className="w-full h-full object-cover pointer-events-none" muted playsInline />
-                              ) : (
-                                <img src={img} className="w-full h-full object-cover" alt="" />
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setFormImages(formImages.filter((_, idx) => idx !== index));
-                                }}
-                                className="absolute top-1 right-1 w-4 h-4 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center text-[10px]"
-                                title="Hapus media ini"
+                        <div className="space-y-2 pt-1.5 animate-fade-in">
+                          <p className="text-[10px] text-zinc-500 font-extrabold uppercase tracking-wider px-1">
+                            Media Terunggah ({formImages.length})
+                          </p>
+                          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                            {formImages.map((img, index) => (
+                              <div 
+                                key={index} 
+                                className="relative group/thumb aspect-square rounded-2xl overflow-hidden border border-zinc-800 bg-black flex items-center justify-center shadow-lg transition-transform hover:scale-105"
                               >
-                                &times;
-                              </button>
-                            </div>
-                          ))}
+                                {isVideoVal(img) ? (
+                                  <video src={img} className="w-full h-full object-cover pointer-events-none" muted playsInline />
+                                ) : (
+                                  <img src={img} className="w-full h-full object-cover" alt="" />
+                                )}
+                                
+                                {/* Overlay to delete on hover */}
+                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center transition-opacity duration-200">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setFormImages(formImages.filter((_, idx) => idx !== index));
+                                    }}
+                                    className="p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-lg transition-all transform scale-75 group-hover/thumb:scale-100 duration-200 text-xs font-black cursor-pointer"
+                                    title="Hapus media ini"
+                                  >
+                                    Hapus
+                                  </button>
+                                </div>
+
+                                <div className="absolute bottom-1 left-1.5 bg-black/75 px-1.5 py-0.5 rounded text-[8px] font-bold text-zinc-400">
+                                  {index + 1}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1847,16 +2124,16 @@ export default function App() {
 
       {/* FOOTER */}
       <footer className="border-t border-zinc-900 bg-zinc-950 py-8 px-4 text-center mt-12">
-        <div className="max-w-7xl mx-auto space-y-3">
+        <div className="max-w-7xl mx-auto space-y-4">
+          <p className="text-xs text-zinc-400 max-w-md mx-auto leading-relaxed">
+            WAST adalah platform marketplace premium terpercaya untuk item in-game, Robux aman, dan Gift In Game. Semua transaksi ditata dengan kepatuhan tinggi serta jaminan kasir handshake.
+          </p>
           <div className="flex flex-col items-center justify-center gap-2">
-            <div className="mb-1">
+            <div className="mb-0.5">
               <SVGLogo size={32} variant="bear" />
             </div>
             <WastWordmark size="md" />
           </div>
-          <p className="text-xs text-zinc-600 max-w-md mx-auto leading-relaxed">
-            WAST adalah platform marketplace premium terpercaya untuk item in-game, Robux aman, dan Gift In Game. Semua transaksi ditata dengan kepatuhan tinggi serta jaminan kasir handshake.
-          </p>
           <div className="text-[10px] text-zinc-700">
             &copy; {new Date().getFullYear()} WAST. Hak Cipta Dilindungi Undang-Undang.
           </div>
@@ -2082,11 +2359,11 @@ export default function App() {
                         className="flex gap-3 bg-zinc-950/40 hover:bg-zinc-850 border border-zinc-850/40 hover:border-zinc-800 p-2.5 rounded-2xl cursor-pointer transition-all duration-200 group active:scale-[0.98]"
                       >
                         {/* Image view */}
-                        <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden shrink-0">
+                        <div className="w-12 h-12 rounded-xl border border-zinc-800 overflow-hidden shrink-0 keep-bg-dark">
                           {p.images && p.images[0] ? (
                             <img src={p.images[0]} referrerPolicy="no-referrer" className="w-full h-full object-cover group-hover:scale-105 transition-all" alt={p.title} />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-zinc-600 bg-zinc-950">
+                            <div className="w-full h-full flex items-center justify-center text-zinc-650">
                               <ShoppingBag size={14} />
                             </div>
                           )}
