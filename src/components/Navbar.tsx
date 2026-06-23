@@ -24,7 +24,8 @@ import {
   Shield,
   Menu,
   Flame,
-  Sparkles
+  Sparkles,
+  LogIn
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -38,6 +39,7 @@ interface NavbarProps {
   onLogout: () => void;
   isDarkMode: boolean;
   onToggleTheme: () => void;
+  onLoginClick?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -51,6 +53,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLogout,
   isDarkMode,
   onToggleTheme,
+  onLoginClick,
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -74,25 +77,30 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <>
       {/* 1. TOP HEADER AND UTILITY BAND (PRECISE REPRESENTATION MATCHING WAST SCREENSHOTS) */}
-      <header className="bg-gradient-to-r from-zinc-950 via-[#001736] to-zinc-950 border-b border-[#0084ff]/30 sticky top-0 z-45 w-full select-none backdrop-blur-md shadow-[0_4px_20px_rgba(0,132,255,0.08)]">
+      <header className="bg-transparent border-b border-[#0084ff]/30 sticky top-0 z-45 w-full select-none backdrop-blur-md shadow-[0_4px_20px_rgba(0,132,255,0.08)]">
         
         {/* BRANDING LOGO & UTILITY PILLS CARD BAR */}
         <div className="w-full flex items-center justify-between px-4 py-2.5 sm:px-6 relative">
           
           {/* Logo on Left - WAST Logo */}
-          <div className="flex items-center gap-2.5 cursor-pointer select-none" onClick={() => onGoToTab('home')}>
-            <SVGLogo size={32} variant="bear" />
-            <div className="flex flex-col">
-              <WastWordmark size="md" />
-              <span className="text-[7px] text-zinc-650 font-extrabold tracking-widest uppercase -mt-0.5 sm:block hidden">
-                PREMIER MARKETPLACE
-              </span>
-            </div>
+          <div className="flex items-center cursor-pointer select-none" onClick={() => onGoToTab('home')}>
+            <SVGLogo width={96} height={34} variant="bear" />
           </div>
 
           {/* Clean Action Capsule Buttons on Right */}
           <div className="flex items-center gap-2">
             
+            {/* If Guest, show Masuk (Login) button cleanly */}
+            {currentUser.id === 'u_guest' && onLoginClick && (
+              <button
+                onClick={onLoginClick}
+                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#0084ff] to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-extrabold text-[11px] tracking-tight transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-md shadow-[#0084ff]/20 shrink-0"
+              >
+                <UserIcon size={11} className="shrink-0 text-white" />
+                <span>Masuk</span>
+              </button>
+            )}
+
             {/* Developer Button shortcut - Uses logo/icon only on mobile as requested! */}
             {(currentUser.role === 'developer' || currentUser.role === 'admin') && (
               <button
@@ -106,6 +114,17 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <Shield size={12} className="fill-current shrink-0" />
                 <span className="hidden sm:inline">Dev Panel</span>
+              </button>
+            )}
+
+            {/* Quick Login button for guest users */}
+            {currentUser?.id === 'u_guest' && (
+              <button
+                onClick={onLoginClick}
+                className="px-3 py-1.5 bg-gradient-to-r from-[#0084ff] to-[#00aaff] hover:from-[#0074e0] hover:to-[#0099ff] text-white rounded-xl text-[10px] sm:text-[11px] font-black tracking-tight active:scale-95 transition-all cursor-pointer flex items-center gap-1 shadow-md shadow-[#0084ff]/20 shrink-0 select-none"
+              >
+                <LogIn size={11} className="shrink-0" />
+                <span>Masuk / Daftar</span>
               </button>
             )}
 
@@ -149,10 +168,26 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="absolute right-4 top-13 w-56 bg-zinc-950 border border-zinc-850 rounded-2xl shadow-2xl p-2 z-50 flex flex-col gap-1 anim-fade-in divide-y divide-zinc-900">
                 <div className="p-2 cursor-default select-none pb-1.5">
                   <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest leading-none">Pengguna Aktif</p>
-                  <p className="text-xs font-bold text-zinc-300 truncate mt-1">{currentUser.username}</p>
+                  <p className="text-xs font-bold text-zinc-300 truncate mt-1">
+                    {currentUser.id === 'u_guest' ? 'Guest (Belum Masuk)' : currentUser.username}
+                  </p>
                 </div>
                 
                 <div className="space-y-0.5 pt-1.5">
+                  {/* Guest Prominent Login Button */}
+                  {currentUser.id === 'u_guest' && (
+                    <button
+                      onClick={() => {
+                        onLoginClick?.();
+                        setIsDropdownOpen(false);
+                      }}
+                      className="flex items-center gap-2.5 px-3 py-2 bg-[#0084ff]/10 hover:bg-[#0084ff]/20 text-left w-full text-[#0084ff] hover:text-[#39a0ff] rounded-xl text-xs font-black transition-colors mb-1"
+                    >
+                      <LogIn size={13} className="text-primary animate-pulse" />
+                      <span>Masuk / Daftar Baru</span>
+                    </button>
+                  )}
+
                   {/* 1. Link Saweria (support) */}
                   <a
                     href="https://saweria.co/Waast"
@@ -161,8 +196,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onClick={() => setIsDropdownOpen(false)}
                     className="flex items-center gap-2.5 px-3 py-2 hover:bg-zinc-900/50 text-zinc-300 hover:text-white rounded-xl text-xs font-semibold transition-colors"
                   >
-                    <Heart size={13} className="text-red-500 fill-red-505" />
-                    <span>Support Saweria</span>
+                    <Heart size={13} className="text-red-500" />
+                    <span>Support</span>
                   </a>
 
                   {/* 2. Link Discord (Customer & service) */}
@@ -177,38 +212,22 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <span>Discord Server (CS)</span>
                   </a>
 
-                  {/* 3. Theme Toggle (Saves context; adaptive theme!) */}
-                  <button
-                    onClick={() => {
-                      onToggleTheme();
-                      setIsDropdownOpen(false);
-                    }}
-                    className="flex items-center gap-2.5 px-3 py-2 hover:bg-zinc-900/50 text-left w-full text-zinc-300 hover:text-white rounded-xl text-xs font-semibold transition-colors"
-                  >
-                    {isDarkMode ? (
-                      <>
-                        <Sun size={13} className="text-yellow-500" />
-                        <span>Mode Terang (Light)</span>
-                      </>
-                    ) : (
-                      <>
-                        <Moon size={13} className="text-indigo-455" />
-                        <span>Mode Gelap (Dark)</span>
-                      </>
-                    )}
-                  </button>
+                  {/* Separator below Support and CS */}
+                  <div className="border-t border-[#0084ff]/25 my-1.5" />
 
-                  {/* 4. Log Out */}
-                  <button
-                    onClick={() => {
-                      onLogout();
-                      setIsDropdownOpen(false);
-                    }}
-                    className="flex items-center gap-2.5 px-3 py-2 hover:bg-red-500/10 text-left w-full text-red-400 hover:text-red-300 rounded-xl text-xs font-black transition-colors"
-                  >
-                    <LogOut size={13} />
-                    <span>Keluar Akun</span>
-                  </button>
+                  {/* 4. Log Out / Swapper */}
+                  {currentUser.id !== 'u_guest' && (
+                    <button
+                      onClick={() => {
+                        onLogout();
+                        setIsDropdownOpen(false);
+                      }}
+                      className="flex items-center gap-2.5 px-3 py-2 hover:bg-red-500/10 text-left w-full text-red-400 hover:text-red-300 rounded-xl text-xs font-black transition-colors"
+                    >
+                      <LogOut size={13} />
+                      <span>Keluar Akun</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </>
@@ -219,7 +238,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       </header>
 
       {/* 2. PERSISTENT FLOATING BOTTOM NAV BAR (Perfect 5-Tab System as represented in Russian reference picture) */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/90 backdrop-blur-xl border-t border-black px-4 py-2 pb-5">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/90 backdrop-blur-xl border-t border-black px-4 py-2 pb-5 md:hidden">
         <div className="max-w-md mx-auto flex items-center justify-between gap-1">
           
           {/* TAP 1: HOME */}

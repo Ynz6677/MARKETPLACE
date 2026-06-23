@@ -41,6 +41,7 @@ export const ChatSystem: React.FC<ChatSystemProps> = ({
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const handleDownloadMedia = (mediaData: string, filename: string) => {
     // Standard secure downloader for image / video data blobs
@@ -122,9 +123,11 @@ export const ChatSystem: React.FC<ChatSystemProps> = ({
     }
   }, [selectedChatId, chats.length, onReadChat]);
 
-  // Scroll to bottom on new message
+  // Scroll to bottom on new message securely without moving the outer page
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    }
   }, [chats, selectedChatId]);
 
   const handleSend = () => {
@@ -162,6 +165,11 @@ export const ChatSystem: React.FC<ChatSystemProps> = ({
   const handleImageUploaded = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const maxLimit = 100 * 1024 * 1024; // 100MB limit
+      if (file.size > maxLimit) {
+        alert(`Gagal mengunggah berkas! Ukuran file maksimal adalah 100MB. Berkas Anda: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+        return;
+      }
       const isVid = file.type.startsWith('video/');
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -191,7 +199,7 @@ export const ChatSystem: React.FC<ChatSystemProps> = ({
     : products.find(p => p.id === activeProductId);
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden flex flex-col md:flex-row h-[460px] sm:h-[500px] shadow-2xl relative">
+    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden flex flex-col md:flex-row h-[580px] sm:h-[650px] shadow-2xl relative">
       
       {/* Dev watch reminder */}
       {overrideTargetChatId && (
@@ -357,7 +365,7 @@ export const ChatSystem: React.FC<ChatSystemProps> = ({
             </div>
 
             {/* Messages Scroll Area */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 bg-zinc-950/20" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 bg-zinc-950/20" style={{ WebkitOverflowScrolling: 'touch' }}>
               {activeProduct && (
                 <div className="p-1.5 bg-zinc-900/60 rounded-xl border border-zinc-800/80 flex items-center gap-2">
                   {isVideoUrl(activeProduct.images[0]) ? (

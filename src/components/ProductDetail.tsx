@@ -95,12 +95,12 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
         </button>
       </div>
 
-      {/* Main detail layout without cards/outlines */}
-      <div className="grid md:grid-cols-2 gap-8 md:gap-10">
+      {/* Main detail layout matching desktop & tablet specifications */}
+      <div className="grid md:grid-cols-2 gap-8 md:gap-10 items-start">
         
-        {/* LEFT COLUMN: INTERACTIVE SLIDES IMAGE CAROUSEL */}
-        <div className="space-y-4">
-          <div className="relative w-full aspect-[16/9] overflow-hidden flex items-center justify-center bg-black/40 keep-bg-dark">
+        {/* LEFT COLUMN: INTERACTIVE IMAGES SLIDES & DESCRIPTION INFOS UNDER IT */}
+        <div className="space-y-5">
+          <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] overflow-hidden flex items-center justify-center bg-black/40 keep-bg-dark rounded-2xl border border-zinc-850">
             
             {/* Soldout Badge overlay */}
             {isSoldOut && (
@@ -134,7 +134,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
               <div className="p-8 text-center text-zinc-650 font-bold">Tidak ada foto barang</div>
             )}
 
-            {/* Slide Index Badge on image bottom-left overlay (matching picture style) */}
+            {/* Slide Index Badge on image bottom-left overlay */}
             {product.images && product.images.length > 0 && (
               <span className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded text-[10px] font-black text-white/90 z-10 select-none">
                 {currentSlideIndex + 1}/{product.images.length}
@@ -147,7 +147,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
                 <button
                   type="button"
                   onClick={prevSlide}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 p-2.5 bg-black/75 hover:bg-[#0084ff] hover:text-white text-zinc-300 rounded-full transition-all z-10 active:scale-90"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 p-2 bg-black/75 hover:bg-[#0084ff] hover:text-white text-zinc-300 rounded-full transition-all z-10 active:scale-90"
                   title="Sebelumnya"
                 >
                   <ChevronLeft size={16} />
@@ -155,7 +155,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
                 <button
                   type="button"
                   onClick={nextSlide}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 bg-black/75 hover:bg-[#0084ff] hover:text-white text-zinc-300 rounded-full transition-all z-10 active:scale-90"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-black/75 hover:bg-[#0084ff] hover:text-white text-zinc-300 rounded-full transition-all z-10 active:scale-90"
                   title="Selanjutnya"
                 >
                   <ChevronRight size={16} />
@@ -200,63 +200,74 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
               ))}
             </div>
           )}
-        </div>
 
-        {/* RIGHT COLUMN: INFO & BUY ACTION ACTIONS */}
-        <div className="flex flex-col justify-between space-y-6">
-          <div className="space-y-4">
-            
-            {/* Category tag */}
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] bg-gradient-to-r from-[#0084ff]/10 to-[#00f0ff]/10 border border-[#0084ff]/30 text-[#0084ff] font-black px-3 py-1 rounded-lg uppercase tracking-widest">
+          {/* BELOW PICTURE: BRANDING, TITLE, PRICE, SOLD, SPECIFICATIONS & DETAILED DESCRIPTION */}
+          <div className="space-y-4 p-5 sm:p-6 bg-[#00142d]/30 border border-[#0084ff]/15 rounded-2xl shadow-xl relative overflow-hidden backdrop-blur-md">
+            {/* Elegant gradient overlay backing */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#0084ff]/5 blur-3xl rounded-full pointer-events-none" />
+
+            {/* Category tag & stock info */}
+            <div className="flex items-center justify-between select-none">
+              <span className="text-[10px] bg-gradient-to-r from-[#0084ff]/15 to-[#00f0ff]/15 border border-[#0084ff]/30 text-[#0084ff] font-black px-3 py-1 rounded-lg uppercase tracking-wider">
                 {product.category}
               </span>
-              <span className={`text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 ${isSoldOut ? 'text-red-500' : product.stock < 20 ? 'text-amber-500' : 'text-emerald-500'}`}>
-                <span className={`w-2 h-2 rounded-full ${isSoldOut ? 'bg-red-500 animate-pulse' : product.stock < 20 ? 'bg-amber-500 animate-pulse' : 'bg-green-500 animate-ping'}`} />
+              <span className={`text-[10.5px] font-black uppercase tracking-wider flex items-center gap-1.5 ${isSoldOut ? 'text-red-500' : product.stock < 20 ? 'text-amber-500' : 'text-emerald-450'}`}>
+                <span className={`w-2 h-2 rounded-full ${isSoldOut ? 'bg-red-500' : product.stock < 15 ? 'bg-amber-505 animate-pulse' : 'bg-green-500 animate-ping'}`} />
                 {isSoldOut ? 'STOK : 0' : product.stock < 20 ? `tersisa: ${product.stock}` : `STOK : ${product.stock}`}
               </span>
             </div>
 
-             {/* Title */}
-            <h1 className="text-lg sm:text-xl font-black text-zinc-100 leading-tight">
+            {/* Title */}
+            <h1 className="text-xl sm:text-2xl font-black text-zinc-50 leading-tight">
               {product.title}
             </h1>
 
-            {/* Price block & Terjual count - placed side by side below the title */}
-            <div className="flex items-center justify-between py-0.5 mt-0.5 select-none">
-              <span className="text-xl sm:text-2xl font-black text-[#0084ff] leading-none tracking-tight">
+            {/* Price block & Terjual count - status layout */}
+            <div className="flex items-center justify-between py-3 border-y border-zinc-900 select-none">
+              <span className="text-2xl sm:text-3xl font-black text-[#0084ff] leading-none tracking-tight">
                 {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(product.price)}
               </span>
-              <span className="text-xs sm:text-sm font-bold text-zinc-400">
-                Terjual: <span className="font-extrabold text-zinc-200">{formatSoldQty(soldQty)}</span>
-              </span>
-            </div>
-
-            {/* Description panel - placed above the logo as requested */}
-            <div className="space-y-1.5 mt-2">
-              <h3 className="text-xs text-zinc-500 font-black uppercase tracking-wider">Keterangan Produk</h3>
-              <div 
-                onClick={() => setShowFullDesc(true)}
-                className="cursor-pointer group/desc p-3 bg-zinc-950/40 hover:bg-zinc-950/60 border border-zinc-850 hover:border-zinc-750 rounded-xl transition-all"
-                title="Klik untuk melihat deskripsi lengkap"
-              >
-                <p className="text-[11px] text-zinc-405 leading-relaxed font-semibold line-clamp-2">
-                  {product.desc}
-                </p>
-                <div className="mt-1 flex items-center gap-1 text-[10px] text-[#0084ff] font-black uppercase tracking-widest">
-                  <span>LIHAT LENGKAP DETAILNYA</span>
-                  <span className="group-hover/desc:translate-x-0.5 transition-transform duration-200">&darr;</span>
-                </div>
+              <div className="text-right">
+                <span className="text-[9px] text-zinc-500 font-black uppercase block tracking-wider leading-none">Status Jualan</span>
+                <span className="text-xs font-black text-zinc-100 bg-zinc-900/60 border border-zinc-850 px-2.5 py-1 rounded-md mt-1 inline-block">
+                  Terjual: <span className="font-black text-[#0084ff]">{formatSoldQty(soldQty)}</span>
+                </span>
               </div>
             </div>
 
-            {/* Merchant / Seller profile box - borderless and backgroundless */}
+            {/* Description panel */}
+            <div className="space-y-2 mt-1">
+              <h3 className="text-[10px] text-zinc-500 font-black uppercase tracking-wider">Keterangan Produk</h3>
+              <div 
+                onClick={() => setShowFullDesc(true)}
+                className="cursor-pointer group/desc p-4 bg-zinc-950/60 hover:bg-zinc-950/90 border border-zinc-850 hover:border-[#0084ff]/30 rounded-xl transition-all shadow-md"
+                title="Klik untuk melihat deskripsi lengkap"
+              >
+                <p className="text-[11px] sm:text-xs text-zinc-200 leading-relaxed font-semibold line-clamp-3">
+                  {product.desc}
+                </p>
+                <div className="mt-3 flex items-center gap-1 text-[9px] text-[#0084ff] font-black uppercase tracking-widest leading-none">
+                  <span>LIHAT LENGKAP DETAILNYA</span>
+                  <span className="group-hover/desc:translate-y-0.5 transition-transform duration-200">&darr;</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: MERCHANT PROFILE, DIRECT CONTACT CHANNELS, QUICK ACTIONS AND SUGGESTION SLIDER */}
+        <div className="space-y-6">
+          
+          {/* Seller profile box - side profile setup */}
+          <div className="bg-zinc-950/40 border border-zinc-850 p-4.5 rounded-2xl space-y-3.5">
+            <h3 className="text-xs text-zinc-500 font-black uppercase tracking-wider">Profil Toko Penjual</h3>
+            
             <div 
               onClick={() => onViewUserStorefront?.(seller.id)}
-              className="flex items-center gap-3 py-2 cursor-pointer transition-all duration-250 group/seller select-none border-t border-zinc-850/30 mt-1"
+              className="flex items-center gap-3.5 cursor-pointer transition-all duration-200 group/seller select-none"
               title={`Klik lihat seluruh jualan ${seller.username}`}
             >
-              <div className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center font-black text-zinc-100 overflow-hidden shrink-0 group-hover/seller:border-[#0084ff] transition-all duration-200">
+              <div className="w-12 h-12 rounded-full bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center font-black text-zinc-100 overflow-hidden shrink-0 group-hover/seller:border-[#0084ff] transition-all duration-200">
                 {seller.profilePic ? (
                   <img src={seller.profilePic} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
                 ) : (
@@ -265,134 +276,89 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="font-extrabold text-zinc-200 truncate text-sm sm:text-base leading-none group-hover/seller:text-[#0084ff] transition-colors duration-205">
+                  <span className="font-extrabold text-zinc-200 truncate text-sm sm:text-base leading-none group-hover/seller:text-[#0084ff] transition-colors duration-200">
                     {seller.username}
                   </span>
                   {seller.verified && (
-                    <span className="inline-flex items-center justify-center bg-blue-500 text-white rounded-full w-3 h-3 text-[7.5px] font-black shrink-0 shadow-sm" title="Terverifikasi">
+                    <span className="inline-flex items-center justify-center bg-blue-500 text-white rounded-full w-3.5 h-3.5 text-[8.5px] font-black shrink-0 shadow-sm" title="Terverifikasi">
                       ✓
                     </span>
                   )}
                   {seller.customRole && (
-                    <span className="text-[8px] bg-amber-500/20 text-yellow-500 font-extrabold px-1 py-0.2 rounded shrink-0">
+                    <span className="text-[8px] bg-amber-500/20 text-yellow-500 font-extrabold px-1.5 py-0.5 rounded shrink-0">
                       {seller.customRole}
                     </span>
                   )}
                 </div>
+                <p className="text-[10px] text-zinc-450 mt-1.5 font-bold group-hover/seller:text-[#0084ff] transition-colors">Kunjungi Storefront &rarr;</p>
               </div>
             </div>
-
-            {/* Bottom Sheet Modal for Full Description View */}
-            {showFullDesc && (
-              <div 
-                className="fixed inset-0 bg-black/80 flex items-end justify-center z-[110] p-0 sm:p-4 backdrop-blur-xs animate-fade-in cursor-default" 
-                onClick={() => setShowFullDesc(false)}
-              >
-                <div 
-                  className="bg-zinc-900 border-t sm:border border-zinc-800 rounded-t-2xl sm:rounded-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[75vh] shadow-2xl relative animate-slide-up"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {/* Drawer drag handle representation */}
-                  <div className="w-12 h-1 bg-zinc-750 rounded-full mx-auto my-3 shrink-0" />
-                  
-                  {/* Header info */}
-                  <div className="px-5 pb-3 border-b border-zinc-850 flex items-center justify-between shrink-0">
-                    <div>
-                      <h4 className="font-extrabold text-xs text-[#0084ff] uppercase tracking-widest">Keterangan Lengkap</h4>
-                      <p className="text-xs font-black text-zinc-200 mt-0.5 truncate max-w-sm">{product.title}</p>
-                    </div>
-                    <button 
-                      onClick={() => setShowFullDesc(false)}
-                      className="text-xs font-black text-zinc-450 hover:text-white px-2.5 py-1.5 bg-zinc-800 rounded-lg hover:bg-zinc-750 transition-colors"
-                    >
-                      Tutup
-                    </button>
-                  </div>
-
-                  {/* Body description text area - scrollable */}
-                  <div className="p-5 overflow-y-auto text-xs sm:text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap font-medium flex-1">
-                    {product.desc}
-                  </div>
-                  
-                  {/* Bottom padding footer safeguard */}
-                  <div className="p-4 border-t border-zinc-850 bg-zinc-950/40 flex justify-end shrink-0 select-none">
-                    <button
-                      onClick={() => setShowFullDesc(false)}
-                      className="px-4 py-2 bg-primary hover:bg-[#0066ff] rounded-xl text-xs font-black text-white transition-all shadow-md active:scale-95"
-                    >
-                      Mengerti, Tutup
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* direct WA and Discord contact buttons */}
-            <div className="space-y-2.5 pt-2">
-              <h3 className="text-xs text-zinc-500 font-black uppercase tracking-wider">Kontak Cepat Direct</h3>
-              <div className="grid grid-cols-2 gap-3">
-                {product.discord ? (
-                  <a
-                    href={product.discord}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-3 bg-gradient-to-r from-[#5865F2] to-[#454fbf] hover:from-[#4954cc] hover:to-[#38409c] text-white text-xs font-black rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 text-center cursor-pointer"
-                  >
-                    <span>DIRECT DISCORD</span>
-                  </a>
-                ) : (
-                  <button
-                    disabled
-                    className="p-3 bg-zinc-950 border border-zinc-900 text-zinc-650 text-xs font-bold rounded-xl flex items-center justify-center gap-2 cursor-not-allowed"
-                  >
-                    <span>Discord Kosong</span>
-                  </button>
-                )}
-
-                {product.wa ? (
-                  <a
-                    href={`https://wa.me/${product.wa.replace(/\D/g, '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-3 bg-gradient-to-r from-[#25D366] to-[#1d9e4c] hover:from-[#1ebd53] hover:to-[#17803e] text-white text-xs font-black rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 text-center cursor-pointer"
-                  >
-                    <span>DIRECT WHATSAPP</span>
-                  </a>
-                ) : (
-                  <button
-                    disabled
-                    className="p-3 bg-zinc-950 border border-zinc-900 text-zinc-650 text-xs font-bold rounded-xl flex items-center justify-center gap-2 cursor-not-allowed"
-                  >
-                    <span>WhatsApp Kosong</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
           </div>
 
-          {/* ACTION HANDLERS */}
-          <div className="pt-5 border-t border-zinc-850 space-y-2">
+          {/* Quick contact direct setup links */}
+          <div className="space-y-2.5">
+            <h3 className="text-xs text-zinc-500 font-black uppercase tracking-wider">Kontak Cepat Direct</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {product.discord ? (
+                <a
+                  href={product.discord}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-3 bg-gradient-to-r from-[#5865F2] to-[#454fbf] hover:from-[#4954cc] hover:to-[#38409c] text-white text-xs font-black rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 text-center cursor-pointer"
+                >
+                  <span>DIRECT DISCORD</span>
+                </a>
+              ) : (
+                <button
+                  disabled
+                  className="p-3 bg-zinc-950 border border-zinc-900 text-zinc-650 text-xs font-bold rounded-xl flex items-center justify-center gap-2 cursor-not-allowed"
+                >
+                  <span>Discord Kosong</span>
+                </button>
+              )}
+
+              {product.wa ? (
+                <a
+                  href={`https://wa.me/${product.wa.replace(/\D/g, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-3 bg-gradient-to-r from-[#25D366] to-[#1d9e4c] hover:from-[#1ebd53] hover:to-[#17803e] text-white text-xs font-black rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 text-center cursor-pointer"
+                >
+                  <span>DIRECT WHATSAPP</span>
+                </a>
+              ) : (
+                <button
+                  disabled
+                  className="p-3 bg-zinc-950 border border-zinc-900 text-zinc-650 text-xs font-bold rounded-xl flex items-center justify-center gap-2 cursor-not-allowed"
+                >
+                  <span>WhatsApp Kosong</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Core action system handlers */}
+          <div className="pt-2">
             {!isMine && !isSoldOut && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-2 gap-3.5">
                 
-                {/* CHAT TO SELLER BUTTON (Internal Chat System) */}
+                {/* CHAT PENJUAL SYSTEM BUTTON (Updated chat systems text) */}
                 <button
                   type="button"
                   onClick={() => onInitiateChat(product.id)}
-                  className="w-full bg-zinc-950 border border-zinc-850 hover:bg-[#0084ff]/5 hover:border-[#0084ff] text-zinc-200 hover:text-white p-4 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shadow-md"
+                  className="w-full bg-zinc-950 border border-zinc-850 hover:bg-[#0084ff]/5 hover:border-[#0084ff] text-zinc-200 hover:text-white p-4 rounded-xl text-xs sm:text-xs font-black flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shadow-md"
                 >
-                  <MessageSquare size={16} className="text-[#0084ff]" />
-                  Chat Sistem App
+                  <MessageSquare size={15} className="text-[#0084ff]" />
+                  Chat Penjual
                 </button>
 
                 {/* BUY BUTTON */}
                 <button
                   type="button"
                   onClick={() => onOpenBuyModal(product)}
-                  className="w-full bg-[#0084ff] hover:bg-[#0066ff] text-white p-4 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 shadow-xl shadow-[#0084ff]/10 transition-all active:scale-95 cursor-pointer"
+                  className="w-full bg-[#0084ff] hover:bg-[#0066ff] text-white p-4 rounded-xl text-xs sm:text-xs font-black flex items-center justify-center gap-2 shadow-xl shadow-[#0084ff]/10 transition-all active:scale-95 cursor-pointer"
                 >
-                  <ShoppingCart size={16} />
+                  <ShoppingCart size={15} />
                   Beli Sekarang
                 </button>
               </div>
@@ -458,9 +424,9 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
             )}
           </div>
 
-          {/* Rekomendasi Produk Lainnya (Indonesian local layout) */}
+          {/* SARAN PRODUK (RECOMMENDATION SLIDER) FLOWS FROM LEFT TO RIGHT */}
           {finalRecs.length > 0 && (
-            <div className="space-y-3 pt-6 border-t border-zinc-800">
+            <div className="space-y-3 pt-5 border-t border-zinc-850">
               <div className="flex items-center gap-1.5 justify-between">
                 <h3 className="text-xs text-zinc-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
                   <span className="w-1.5 h-3 bg-primary rounded-full" />
@@ -468,7 +434,9 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
                 </h3>
                 <span className="text-[9px] text-[#0084ff] font-black uppercase">Saran Populer</span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              
+              {/* Horizontal slider container with scrollbar hidden dynamically */}
+              <div className="flex gap-3 overflow-x-auto pb-3.5 rounded-2xl snap-x [&::-webkit-scrollbar]:hidden scrollbar-none">
                 {finalRecs.map((p) => {
                   return (
                     <div
@@ -478,23 +446,23 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
                         // Reset slider on selection change
                         setCurrentSlideIndex(0);
                       }}
-                      className="bg-zinc-950/30 border border-zinc-900 hover:border-primary/40 rounded-xl p-2 cursor-pointer transition-all active:scale-98 flex flex-col justify-between group"
+                      className="bg-zinc-950/45 hover:bg-zinc-950/85 border border-zinc-900/80 hover:border-[#0084ff]/40 rounded-xl p-3 w-[150px] sm:w-[165px] shrink-0 cursor-pointer transition-all active:scale-97 flex flex-col justify-between group snap-start shadow-lg"
                     >
-                      <div className="relative aspect-square rounded-lg overflow-hidden mb-1.5 border border-zinc-900 keep-bg-dark">
+                      <div className="relative aspect-square rounded-lg overflow-hidden mb-2.5 border border-zinc-900 keep-bg-dark bg-black/30">
                         {isVideoUrl(p.images[0]) ? (
                           <video src={p.images[0]} className="w-full h-full object-cover" muted />
                         ) : (
-                          <img src={p.images[0]} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt="" />
+                          <img src={p.images[0]} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt={p.title} />
                         )}
-                        <span className="absolute top-1 left-1 text-[7px] font-black bg-black/60 text-white px-1.5 py-0.5 rounded-md uppercase">
+                        <span className="absolute top-1.5 left-1.5 text-[7px] font-black bg-black/75 text-white px-2 py-0.5 rounded uppercase leading-none tracking-wider">
                           {p.category}
                         </span>
                       </div>
-                      <div className="space-y-0.5">
-                        <h4 className="text-[10px] font-bold text-zinc-300 line-clamp-1 group-hover:text-primary transition-colors leading-tight">
+                      <div className="space-y-1 min-w-0 text-left">
+                        <h4 className="text-[10.5px] font-black text-zinc-350 line-clamp-1 group-hover:text-[#0084ff] transition-colors leading-tight">
                           {p.title}
                         </h4>
-                        <p className="text-[10px] font-black text-primary">
+                        <p className="text-[10px] font-black text-[#0084ff] truncate">
                           {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(p.price)}
                         </p>
                       </div>
@@ -508,6 +476,51 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
         </div>
 
       </div>
+
+      {/* Bottom Sheet Drawer for Full Description detail view */}
+      {showFullDesc && (
+        <div 
+          className="fixed inset-0 bg-black/80 flex items-end justify-center z-[110] p-0 sm:p-4 backdrop-blur-xs animate-fade-in cursor-default" 
+          onClick={() => setShowFullDesc(false)}
+        >
+          <div 
+            className="bg-zinc-900 border-t sm:border border-zinc-800 rounded-t-2xl sm:rounded-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[75vh] shadow-2xl relative animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Drawer drag handle representation */}
+            <div className="w-12 h-1 bg-zinc-750 rounded-full mx-auto my-3 shrink-0" />
+            
+            {/* Header info */}
+            <div className="px-5 pb-3 border-b border-zinc-850 flex items-center justify-between shrink-0">
+              <div>
+                <h4 className="font-extrabold text-xs text-[#0084ff] uppercase tracking-widest">Keterangan Lengkap</h4>
+                <p className="text-xs font-black text-zinc-200 mt-0.5 truncate max-w-sm">{product.title}</p>
+              </div>
+              <button 
+                onClick={() => setShowFullDesc(false)}
+                className="text-xs font-black text-zinc-450 hover:text-white px-2.5 py-1.5 bg-zinc-800 rounded-lg hover:bg-zinc-750 transition-colors"
+              >
+                Tutup
+              </button>
+            </div>
+
+            {/* Body description text area - scrollable */}
+            <div className="p-5 overflow-y-auto text-xs sm:text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap font-medium flex-1">
+              {product.desc}
+            </div>
+            
+            {/* Bottom padding footer safeguard */}
+            <div className="p-4 border-t border-zinc-850 bg-zinc-950/40 flex justify-end shrink-0 select-none">
+              <button
+                onClick={() => setShowFullDesc(false)}
+                className="px-4 py-2 bg-[#0084ff] hover:bg-[#0066ff] rounded-xl text-xs font-black text-white transition-all shadow-md active:scale-95"
+              >
+                Mengerti, Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

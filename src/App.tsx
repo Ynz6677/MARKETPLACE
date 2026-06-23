@@ -39,7 +39,7 @@ import {
   saveBanner,
   clearAllExceptUsers
 } from './firebase';
-import { Sparkles, ShoppingBag, ShieldAlert, BadgeCheck, MessageSquare, Plus, CheckCircle, XCircle, AlertCircle, Search, Users, SlidersHorizontal, Heart, Mail, Headphones } from 'lucide-react';
+import { Sparkles, ShoppingBag, ShieldAlert, BadgeCheck, MessageSquare, Plus, CheckCircle, XCircle, AlertCircle, Search, Users, SlidersHorizontal, Heart, Mail, Headphones, Home, History, PlusCircle, LogOut, LogIn, Shield, User as UserIcon } from 'lucide-react';
 
 export default function App() {
   // Splash Screen Screen Loader
@@ -99,7 +99,9 @@ export default function App() {
 
   // Notification References for push system
   const appStartTime = useRef(Date.now());
+  const isFirstTxLoad = useRef(true);
   const notifiedTxIds = useRef<Set<string>>(new Set());
+  const notifiedCompletedTxIds = useRef<Set<string>>(new Set());
   const notifiedMsgIds = useRef<Set<string>>(new Set());
   const latestUsersRef = useRef<User[]>([]);
   const latestCurrentUserRef = useRef<User | null>(null);
@@ -137,6 +139,53 @@ export default function App() {
     }
   };
 
+  const playCashSound = () => {
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      const now = ctx.currentTime;
+
+      // Ka-ching! Double metallic coin clinks
+      // Coin clink 1 (crisp high sound)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.frequency.setValueAtTime(1800, now);
+      osc1.frequency.exponentialRampToValueAtTime(3200, now + 0.12);
+      gain1.gain.setValueAtTime(0.18, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.25);
+
+      // Coin clink 2 (delayed slightly for standard clink effect)
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.frequency.setValueAtTime(1500, now + 0.08);
+      osc2.frequency.exponentialRampToValueAtTime(2800, now + 0.2);
+      gain2.gain.setValueAtTime(0.15, now + 0.08);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.08);
+      osc2.stop(now + 0.35);
+
+      // Warm registers
+      const osc3 = ctx.createOscillator();
+      const gain3 = ctx.createGain();
+      osc3.frequency.setValueAtTime(987.77, now + 0.15); // B5
+      gain3.gain.setValueAtTime(0.12, now + 0.15);
+      gain3.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      osc3.connect(gain3);
+      gain3.connect(ctx.destination);
+      osc3.start(now + 0.15);
+      osc3.stop(now + 0.5);
+    } catch (error) {
+      console.warn('Audio Context failed inside playCashSound:', error);
+    }
+  };
+
   const sendPushNotification = (title: string, body: string, onClick?: () => void) => {
     playNotificationSound();
     
@@ -159,6 +208,30 @@ export default function App() {
     }
     
     triggerToast(`${title}: ${body}`, 'info');
+  };
+
+  const sendCashNotification = (title: string, body: string, onClick?: () => void) => {
+    playCashSound();
+    
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try {
+        const notif = new Notification(title, {
+          body,
+          icon: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80',
+          tag: 'wast-cash'
+        });
+        if (onClick) {
+          notif.onclick = () => {
+            window.focus();
+            if (typeof onClick === 'function') onClick();
+          };
+        }
+      } catch (e) {
+        console.warn('HTML5 Notification failed:', e);
+      }
+    }
+    
+    triggerToast(`${title} ${body}`, 'success');
   };
 
   // Active View Navigation Tab
@@ -197,6 +270,14 @@ export default function App() {
   const [isPriceFilterOpen, setIsPriceFilterOpen] = useState(false);
   const [likedProducts, setLikedProducts] = useState<number[]>([1, 4, 7]);
 
+  // Home Pagination
+  const [homePage, setHomePage] = useState(1);
+
+  // Reset page to 1 when search parameters or filters change
+  useEffect(() => {
+    setHomePage(1);
+  }, [selectedCategory, searchQuery, minPrice, maxPrice, sortBy]);
+
   // Custom Modal Confirmation State for Logout
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -206,42 +287,16 @@ export default function App() {
   // Popup Search Modal state
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
-  // System Preference Adaptive Theme state
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const saved = localStorage.getItem('theme-preference');
-    if (saved === 'light') return false;
-    if (saved === 'dark') return true;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
+  // System Preference Adaptive Theme state (Disabled - always dark mode)
+  const isDarkMode = true;
 
-  // Setup OS system theme listener
+  // Sync document class with isDarkMode state (always dark)
   useEffect(() => {
-    const query = window.matchMedia('(prefers-color-scheme: dark)');
-    const handler = (e: MediaQueryListEvent) => {
-      const saved = localStorage.getItem('theme-preference');
-      if (!saved) {
-        setIsDarkMode(e.matches);
-      }
-    };
-    query.addEventListener('change', handler);
-    return () => query.removeEventListener('change', handler);
+    document.documentElement.classList.add('dark');
   }, []);
 
-  // Sync document class with isDarkMode state
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [isDarkMode]);
-
   const handleToggleTheme = () => {
-    setIsDarkMode((prev) => {
-      const nextVal = !prev;
-      localStorage.setItem('theme-preference', nextVal ? 'dark' : 'light');
-      return nextVal;
-    });
+    // No-op (Always dark mode)
   };
 
   // Interactive Product Upload & Editing Forms states
@@ -274,12 +329,16 @@ export default function App() {
     const localUser = localStorage.getItem('sv_current_user');
     if (localUser) {
       try {
-        setCurrentUser(JSON.parse(localUser));
+        const parsed = JSON.parse(localUser);
+        setCurrentUser(parsed);
+        if (parsed.id === 'u_guest') {
+          setForceAuthScreen(true);
+        }
       } catch (e) {
         console.error(e);
       }
     } else {
-      // PROFIL DEFAULT NYA GUNAKAN PROFIL GUEST
+      // PROFIL DEFAULT NYA GUNAKAN PROFIL GUEST DAN PAKSA TAMPILAN LOGIN PERTAMA KALI
       const guestProfile: User = {
         id: 'u_guest',
         username: 'Guest',
@@ -292,6 +351,7 @@ export default function App() {
       };
       setCurrentUser(guestProfile);
       localStorage.setItem('sv_current_user', JSON.stringify(guestProfile));
+      setForceAuthScreen(true);
     }
 
     // 2. Real-time synchronizations with Firestore
@@ -353,35 +413,39 @@ export default function App() {
         const sorted = [...fetchedTxs].sort((a, b) => b.timestamp - a.timestamp);
         setTransactions(sorted);
 
+        // Seed initial loaded transactions so we don't notify or play sound for existing records
+        if (isFirstTxLoad.current) {
+          fetchedTxs.forEach((tx) => {
+            notifiedTxIds.current.add(tx.id);
+            if (tx.status === 'completed') {
+              notifiedCompletedTxIds.current.add(tx.id);
+            }
+          });
+          isFirstTxLoad.current = false;
+        }
+
         // Check for new transactions involving the logged-in user
         const cUser = latestCurrentUserRef.current;
         if (cUser) {
           fetchedTxs.forEach((tx) => {
-            // Only notify if event occurred after application mounted/reloaded
-            if (tx.timestamp >= appStartTime.current && !notifiedTxIds.current.has(tx.id)) {
-              notifiedTxIds.current.add(tx.id);
+            const isParticipant = tx.sellerId === cUser.id || tx.buyerId === cUser.id;
 
+            // 1. Handle Transaction Completing Transitions (Selesai Transaksi)
+            if (tx.status === 'completed' && isParticipant && !notifiedCompletedTxIds.current.has(tx.id)) {
+              notifiedCompletedTxIds.current.add(tx.id);
+              notifiedTxIds.current.add(tx.id); // Guard double notifications
+
+              let completedTitle = 'Transaksi Sukses! 💰';
+              let completedBody = `Pesanan ${tx.productName} sebanyak ${tx.qty} pcs telah berhasil diselesaikan!`;
               if (tx.sellerId === cUser.id) {
-                // Current user is the seller
                 const buyerObj = latestUsersRef.current.find((u) => u.id === tx.buyerId);
                 const buyerName = buyerObj ? buyerObj.username : 'Pelanggan';
-                sendPushNotification(
-                  'Pesanan Baru Masuk! 🛒',
-                  `${buyerName} telah membeli ${tx.productName} sebanyak ${tx.qty} pcs!`,
-                  () => {
-                    setActiveTab('history');
-                  }
-                );
-              } else if (tx.buyerId === cUser.id) {
-                // Current user is the buyer
-                sendPushNotification(
-                  'Pembelian Sukses! 🎉',
-                  `Anda berhasil membeli ${tx.productName} sebanyak ${tx.qty} pcs. Silahkan tunggu konfirmasi penjual!`,
-                  () => {
-                    setActiveTab('history');
-                  }
-                );
+                completedBody = `Pesanan oleh ${buyerName} (${tx.productName}) sudah berhasil selesai & dana diteruskan!`;
               }
+              sendCashNotification(completedTitle, completedBody, () => {
+                setActiveTab('history');
+              });
+              return;
             }
           });
         }
@@ -690,19 +754,30 @@ export default function App() {
     if (files) {
       const base64List: string[] = [...formImages];
       let filesProcessed = 0;
+      const maxSize = 100 * 1024 * 1024; // 100MB max limit
 
-      for (let i = 0; i < files.length; i++) {
+      const qualifiedFiles = files ? (Array.from(files) as File[]).filter(f => {
+        if (f.size > maxSize) {
+          triggerToast(`Berkas "${f.name}" melebihi batas maksimal 100MB!`, 'error');
+          return false;
+        }
+        return true;
+      }) : [];
+
+      if (qualifiedFiles.length === 0) return;
+
+      for (let i = 0; i < qualifiedFiles.length; i++) {
         const reader = new FileReader();
         reader.onload = (event) => {
           if (event.target?.result) {
             base64List.push(event.target.result as string);
           }
           filesProcessed++;
-          if (filesProcessed === files.length) {
+          if (filesProcessed === qualifiedFiles.length) {
             setFormImages(base64List);
           }
         };
-        reader.readAsDataURL(files[i]);
+        reader.readAsDataURL(qualifiedFiles[i]);
       }
     }
   };
@@ -1205,8 +1280,8 @@ export default function App() {
       )}
 
       {/* HEADER NAVBAR REPLICATING BAZARA BOT TOP BAR */}
-      {currentUser && (
-        <div className="sticky top-0 z-40 w-full shadow-xl">
+      {currentUser && !forceAuthScreen && (
+        <div className="sticky top-0 z-40 w-full shadow-xl bg-gradient-to-r from-[#00142d] via-[#0051ba] to-[#00142d]">
           <Navbar
             currentUser={currentUser}
             notificationCount={unreadMessagesCount}
@@ -1234,6 +1309,7 @@ export default function App() {
             onLogout={() => setShowLogoutConfirm(true)}
             isDarkMode={isDarkMode}
             onToggleTheme={handleToggleTheme}
+            onLoginClick={() => setForceAuthScreen(true)}
           />
         </div>
       )}
@@ -1245,16 +1321,9 @@ export default function App() {
         </div>
       )}
 
-      {/* FULL VIEW WIDESCREEN BANNER DRIVEN */}
-      {currentUser && activeTab === 'home' && !activeProductId && banner && banner.length > 0 && (
-        <PromoSlider banners={banner} />
-      )}
-
       {/* BODY WORKSPACE */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6 pb-44">
-        
-        {/* LOGIN AND REGISTRATION ROUTER */}
-        {(!currentUser || forceAuthScreen) ? (
+      {(!currentUser || forceAuthScreen) ? (
+        <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6 pb-44">
           <div className="py-12">
             <AuthScreen
               users={users}
@@ -1262,7 +1331,7 @@ export default function App() {
               onRegisterSuccess={handleRegister}
             />
             {currentUser?.id === 'u_guest' && (
-              <div className="max-w-md mx-auto mt-6 text-center px-4 animate-fade-in">
+              <div className="max-w-md mx-auto mt-6 text-center px-4 animate-fade-in flex flex-col gap-1">
                 <button
                   onClick={() => setForceAuthScreen(false)}
                   className="px-6 py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white rounded-xl text-xs font-bold tracking-tight transition-all cursor-pointer shadow-lg outline-none flex items-center justify-center gap-1.5 mx-auto"
@@ -1272,10 +1341,237 @@ export default function App() {
               </div>
             )}
           </div>
-        ) : (
+        </main>
+      ) : (
+        
+        /* UNIFIED FLUSH SIDEBAR AND CONTENT LAYOUT WITH NO GAP BELOW NAVBAR */
+        <div className="flex-1 flex flex-col md:flex-row w-full relative">
           
-          /* ACTIVE VIEWS CONSOLE */
-          <>
+          {/* DESKTOP SIDEBAR: COMPACT, SLIGHTLY THINNER (w-48), FLUSH TO THE TOP NAV BAR */}
+          <aside 
+            className="hidden md:flex flex-col w-48 shrink-0 sticky top-[55px] h-[calc(100vh-55px)] border-r border-[#0084ff]/20 p-3 text-white z-30 select-none overflow-y-auto"
+            style={{
+              background: 'linear-gradient(to bottom, #001026 0%, #001f42 50%, #0d0d10 100%)'
+            }}
+          >
+            {/* COMPACT STYLIZED PROFILE HEADER */}
+            <div 
+              onClick={() => {
+                setActiveTab('profile');
+                setOverrideDevChatId(null);
+              }}
+              className="flex flex-col items-center gap-2 pb-3.5 border-b border-[#0084ff]/15 w-full cursor-pointer hover:bg-white/5 rounded-xl p-1.5 transition-all group active:scale-[0.98]"
+            >
+              <div className="relative group-hover:scale-105 transition-transform duration-200">
+                {/* Profile Picture / Avatar - Square, no border as requested */}
+                <div className="w-12 h-12 rounded-none overflow-hidden shrink-0 bg-zinc-950 flex items-center justify-center">
+                  {currentUser.profilePic ? (
+                    <img 
+                      src={currentUser.profilePic} 
+                      className="w-full h-full object-cover" 
+                      alt={currentUser.username} 
+                      referrerPolicy="no-referrer" 
+                    />
+                  ) : (
+                    <UserIcon size={18} className="text-zinc-500" />
+                  )}
+                </div>
+                {/* Verif Badge */}
+                {currentUser.verified && (
+                  <div className="absolute -bottom-0.5 -right-0.5 bg-[#001026] p-0.5" title="Verified Seller">
+                    <BadgeCheck size={14} className="text-[#3bb0ff] fill-[#0084ff]/10" />
+                  </div>
+                )}
+              </div>
+              <div className="text-center w-full min-w-0 px-1 flex flex-col items-center">
+                <h3 className="text-[12px] font-black tracking-tight truncate text-white leading-normal transition-colors">
+                  {currentUser.username}
+                </h3>
+                {/* Yellow role/title with elegant side bars/border as requested */}
+                <div className="mt-1 flex items-center bg-yellow-400/10 px-2 py-0.5 border-l-2 border-r-2 border-yellow-400 select-none">
+                  <span className="text-[7.5px] text-yellow-400 font-extrabold uppercase tracking-widest leading-none">
+                    {currentUser.customRole || (currentUser.role === 'user' ? 'Member' : currentUser.role)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Sidebar main navigation links */}
+            <div className="flex flex-col gap-1 pt-1.5">
+              {/* 1. HOME tag element */}
+              <button
+                onClick={() => {
+                  setActiveTab('home');
+                  setOverrideDevChatId(null);
+                  setActiveProductId(null);
+                  setEditingProduct(null);
+                }}
+                className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl w-full text-left font-black transition-all text-[11px] tracking-tight select-none cursor-pointer ${
+                  activeTab === 'home' && !activeProductId
+                    ? 'bg-gradient-to-r from-[#0084ff] to-[#0051ba] text-white shadow-md shadow-[#0084ff]/15 scale-[1.01]'
+                    : 'text-zinc-300 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Home size={14} />
+                <span>Beranda</span>
+              </button>
+
+              {/* 2. CHATS tag element */}
+              <button
+                onClick={() => {
+                  setActiveTab('chats');
+                  setOverrideDevChatId(null);
+                }}
+                className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl w-full text-left font-black transition-all text-[11px] tracking-tight select-none cursor-pointer relative ${
+                  activeTab === 'chats'
+                    ? 'bg-gradient-to-r from-[#0084ff] to-[#0051ba] text-white shadow-md shadow-[#0084ff]/15 scale-[1.01]'
+                    : 'text-zinc-300 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <MessageSquare size={14} />
+                <span>Obrolan</span>
+                {unreadMessagesCount > 0 && (
+                  <span className="absolute right-2.5 top-2 bg-red-600 text-[8px] text-white font-black px-1.5 py-0.5 rounded-full border border-zinc-950 min-w-4 text-center leading-none">
+                    {unreadMessagesCount}
+                  </span>
+                )}
+              </button>
+
+              {/* 3. UPLOAD/SELL tag element */}
+              <button
+                onClick={() => {
+                  setActiveTab('upload');
+                  setOverrideDevChatId(null);
+                }}
+                className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl w-full text-left font-black transition-all text-[11px] tracking-tight select-none cursor-pointer ${
+                  activeTab === 'upload'
+                    ? 'bg-gradient-to-r from-[#0084ff] to-[#0051ba] text-white shadow-md shadow-[#0084ff]/15 scale-[1.01]'
+                    : 'text-zinc-300 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <PlusCircle size={14} />
+                <span>Jual Item</span>
+              </button>
+
+              {/* 4. HISTORY transaction tag element */}
+              <button
+                onClick={() => {
+                  setActiveTab('history');
+                  setOverrideDevChatId(null);
+                }}
+                className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl w-full text-left font-black transition-all text-[11px] tracking-tight select-none cursor-pointer ${
+                  activeTab === 'history'
+                    ? 'bg-gradient-to-r from-[#0084ff] to-[#0051ba] text-white shadow-md shadow-[#0084ff]/15 scale-[1.01]'
+                    : 'text-zinc-300 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <History size={14} />
+                <span>Riwayat</span>
+              </button>
+
+              {/* 5. PROFILE tag element */}
+              <button
+                onClick={() => {
+                  setActiveTab('profile');
+                  setOverrideDevChatId(null);
+                }}
+                className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl w-full text-left font-black transition-all text-[11px] tracking-tight select-none cursor-pointer ${
+                  activeTab === 'profile'
+                    ? 'bg-gradient-to-r from-[#0084ff] to-[#0051ba] text-white shadow-md shadow-[#0084ff]/15 scale-[1.01]'
+                    : 'text-zinc-300 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <div className="w-3.5 h-3.5 rounded-full overflow-hidden border border-zinc-500 shrink-0">
+                  {currentUser.profilePic ? (
+                    <img src={currentUser.profilePic} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+                  ) : (
+                    <UserIcon size={8} className="text-zinc-450 mx-auto" />
+                  )}
+                </div>
+                <span>Profil Saya</span>
+              </button>
+
+              {/* 6. DEV PANEL tag element (Show only if developer/admin) */}
+              {(currentUser.role === 'developer' || currentUser.role === 'admin') && (
+                <button
+                  onClick={() => {
+                    setActiveTab('developer');
+                    setOverrideDevChatId(null);
+                  }}
+                  className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl w-full text-left font-black transition-all text-[11px] tracking-widest select-none cursor-pointer uppercase ${
+                    activeTab === 'developer'
+                      ? 'bg-gradient-to-r from-[#0084ff] to-[#0051ba] text-white shadow-md shadow-[#0084ff]/15 scale-[1.01]'
+                      : 'text-[#0084ff] hover:bg-[#0084ff]/20 hover:text-white'
+                  }`}
+                >
+                  <Shield size={14} />
+                  <span>Dev Panel</span>
+                </button>
+              )}
+            </div>
+
+            {/* COMMUNITY & SUPPORT LINKS PORTION */}
+            <div className="flex flex-col gap-0.5 pt-3 mt-auto border-t border-[#0084ff]/20">
+              <p className="text-[8px] text-zinc-450 font-black uppercase tracking-widest px-2.5 mb-1 leading-none">Bantuan & Layanan</p>
+
+              {/* 1. Support (Saweria) */}
+              <a
+                href="https://saweria.co/Waast"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-white/5 text-zinc-300 hover:text-white rounded-xl text-[10.5px] font-semibold transition-all"
+              >
+                <Heart size={13} className="text-red-500 fill-red-500" />
+                <span>Support</span>
+              </a>
+
+              {/* 2. Discord Server CS */}
+              <a
+                href="https://discord.gg/kQPXrnSbuH"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-white/5 text-zinc-300 hover:text-white rounded-xl text-[10.5px] font-semibold transition-all"
+              >
+                <Headphones size={13} className="text-indigo-400" />
+                <span>Discord Server (CS)</span>
+              </a>
+
+              {/* SPECIAL EXPLICIT DIVIDER: "tambahan di beri garis pembatas di bawah nya support dan CS" */}
+              <div className="border-t border-[#0084ff]/15 my-1.5" />
+
+              {/* 3. Account options (Login/Logout) */}
+              {currentUser?.id === 'u_guest' ? (
+                <button
+                  onClick={() => setForceAuthScreen(true)}
+                  className="flex items-center gap-2 px-2.5 py-1.5 bg-[#0084ff]/10 hover:bg-[#0084ff]/20 text-left w-full text-[#0084ff] hover:text-[#39a0ff] rounded-xl text-[10.5px] font-black transition-all"
+                >
+                  <LogIn size={13} />
+                  <span>Masuk / Daftar</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowLogoutConfirm(true)}
+                  className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-red-500/10 text-left w-full text-red-400 hover:text-red-350 rounded-xl text-[10.5px] font-black transition-all"
+                >
+                  <LogOut size={13} />
+                  <span>Keluar Akun</span>
+                </button>
+              )}
+            </div>
+          </aside>
+
+          {/* MAIN PAGE WORKSPACE CLIENT VIEWPORT */}
+          <main className="flex-grow p-4 sm:p-6 lg:p-8 space-y-6 min-w-0 pb-44 overflow-y-auto">
+            
+            {/* STYLIZED 2-BANNER PROMO SLIDER WITH ADAPTIVE DEVICE LAYOUT - ONLY IN BERANDA (HOME) */}
+            {activeTab === 'home' && !activeProductId && banner && banner.length > 0 && (
+              <div className="max-w-full w-full mx-auto mt-1 mb-4 sm:mb-6 animate-fade-in">
+                <PromoSlider banners={banner} />
+              </div>
+            )}
+
+            {/* MAIN PORTAL SPACE CONTENT */}
+            <div className="w-full space-y-6">
             {/* VIEW TAB 1: HOME CATALOG SPLASH */}
             {activeTab === 'home' && (
               <div className="space-y-6">
@@ -1416,7 +1712,12 @@ export default function App() {
 
                 {/* Grid collection display */}
                 <div className="grid grid-cols-2 min-[420px]:grid-cols-3 min-[580px]:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-2 sm:gap-3">
-                  {filteredProducts.map((p) => {
+                  {(() => {
+                    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+                    const itemsPerPage = isMobile ? 30 : 50;
+                    const startIndex = (homePage - 1) * itemsPerPage;
+                    return filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+                  })().map((p) => {
                     const sel = getProductSeller(p.sellerId);
                     return (
                       <div
@@ -1507,6 +1808,55 @@ export default function App() {
                     </div>
                   )}
                 </div>
+
+                {/* PAGINATION NUMERICAL PAGES (PC: 50 limit, Mobile: 30 limit) */}
+                {(() => {
+                  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+                  const itemsPerPage = isMobile ? 30 : 50;
+                  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+                  if (totalPages <= 1) return null;
+
+                  return (
+                    <div className="flex items-center justify-center gap-1.5 mt-8 border-t border-zinc-900 pt-6 select-none shrink-0 flex-wrap">
+                      <button
+                        onClick={() => {
+                          setHomePage(prev => Math.max(prev - 1, 1));
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        disabled={homePage === 1}
+                        className="px-3 py-1.5 rounded-xl bg-zinc-900 text-[11px] font-extrabold border border-zinc-800 text-zinc-400 hover:text-white disabled:opacity-35 disabled:pointer-events-none transition-all cursor-pointer"
+                      >
+                        Sebelumnya
+                      </button>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((pNum) => (
+                        <button
+                          key={pNum}
+                          onClick={() => {
+                            setHomePage(pNum);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          className={`w-8.5 h-8.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                            homePage === pNum 
+                              ? 'bg-[#0084ff] text-white font-black shadow-md shadow-[#0084ff]/25 scale-105' 
+                              : 'bg-zinc-900 text-zinc-400 border border-zinc-800 hover:text-white hover:bg-zinc-850'
+                          }`}
+                        >
+                          {pNum}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => {
+                          setHomePage(prev => Math.min(prev + 1, totalPages));
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        disabled={homePage === totalPages}
+                        className="px-3 py-1.5 rounded-xl bg-zinc-900 text-[11px] font-extrabold border border-zinc-800 text-zinc-400 hover:text-white disabled:opacity-35 disabled:pointer-events-none transition-all cursor-pointer"
+                      >
+                        Berikutnya
+                      </button>
+                    </div>
+                  );
+                })()}
 
               </div>
             )}
@@ -1666,19 +2016,20 @@ export default function App() {
                   </div>
                 </div>
               ) : (
-                /* STANDARD CREATE/EDIT PRODUCT VIEW */
-                <div className="max-w-2xl mx-auto bg-zinc-900 border border-zinc-800 rounded-3xl p-6 md:p-8 shadow-2xl relative">
+                /* STANDARD CREATE/EDIT PRODUCT VIEW - SCROLL LIMIT */
+                <div className="max-w-2xl mx-auto bg-zinc-900 border border-zinc-800 rounded-3xl p-5 md:p-6 shadow-2xl relative flex flex-col max-h-[80vh] overflow-hidden">
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-amber-500" />
                   
-                  <h2 className="text-xl md:text-2xl font-black text-zinc-100 flex items-center gap-2 mb-2">
+                  <h2 className="text-xl md:text-2xl font-black text-zinc-100 flex items-center gap-2 mb-1.5 shrink-0">
                     <Plus size={22} className="text-primary" />
                     {editingProduct ? 'Ubah Informasi Jualan Anda' : 'Buat Jualan Baru'}
                   </h2>
-                  <p className="text-xs text-zinc-500 mb-6 font-semibold">
+                  <p className="text-xs text-zinc-500 mb-4 font-semibold shrink-0">
                     Isi informasi produk dengan jujur & tawarkan bantuan terbaik kepada pembeli WAST.
                   </p>
 
-                  <form onSubmit={handleProductSubmit} className="space-y-5">
+                  <div className="flex-grow overflow-y-auto pr-1.5 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
+                    <form onSubmit={handleProductSubmit} className="space-y-5">
                     <div className="grid sm:grid-cols-2 gap-4">
                       
                       {/* Category selectors */}
@@ -1836,7 +2187,7 @@ export default function App() {
                         
                         <div className="space-y-1">
                           <p className="text-xs text-zinc-200 font-bold">
-                            Seret & jatuhkan berkas di sini atau <span className="text-primary hover:underline">Klik untuk unggah</span>
+                          Drop & drag your photos/videos here <span className="text-primary hover:underline">Klik untuk unggah</span>
                           </p>
                           <p className="text-[10px] text-zinc-500 font-semibold">
                             Mendukung unggahan media sekaligus (Gambar & Video)
@@ -1914,6 +2265,7 @@ export default function App() {
                       </button>
                     </div>
                   </form>
+                  </div>
 
                   {/* Assistive footer */}
                   <div className="mt-6 border-t border-zinc-850 pt-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
@@ -2117,28 +2469,27 @@ export default function App() {
               />
             )}
 
-          </>
-        )}
-
-      </main>
-
-      {/* FOOTER */}
-      <footer className="border-t border-zinc-900 bg-zinc-950 py-8 px-4 text-center mt-12">
-        <div className="max-w-7xl mx-auto space-y-4">
-          <p className="text-xs text-zinc-400 max-w-md mx-auto leading-relaxed">
-            WAST adalah platform marketplace premium terpercaya untuk item in-game, Robux aman, dan Gift In Game. Semua transaksi ditata dengan kepatuhan tinggi serta jaminan kasir handshake.
-          </p>
-          <div className="flex flex-col items-center justify-center gap-2">
-            <div className="mb-0.5">
-              <SVGLogo size={32} variant="bear" />
             </div>
-            <WastWordmark size="md" />
-          </div>
-          <div className="text-[10px] text-zinc-700">
-            &copy; {new Date().getFullYear()} WAST. Hak Cipta Dilindungi Undang-Undang.
-          </div>
+          </main>
         </div>
-      </footer>
+      )}
+
+      {/* FOOTER - Hidden in chat tab and auth gate, Logo stands above text */}
+      {activeTab !== 'chats' && !forceAuthScreen && (
+        <footer className="border-t border-zinc-900 bg-zinc-950 py-8 px-4 text-center mt-12">
+          <div className="max-w-7xl mx-auto space-y-4">
+            <div className="flex flex-col items-center justify-center gap-2">
+              <SVGLogo size={70} variant="bear" />
+            </div>
+            <p className="text-xs text-zinc-400 max-w-md mx-auto leading-relaxed mt-2">
+              WAST adalah platform marketplace premium terpercaya untuk item in-game, Robux aman, dan Gift In Game. Semua transaksi ditata dengan kepatuhan tinggi serta jaminan kasir handshake.
+            </p>
+            <div className="text-[10px] text-zinc-700">
+              &copy; {new Date().getFullYear()} WAST. Hak Cipta Dilindungi Undang-Undang.
+            </div>
+          </div>
+        </footer>
+      )}
 
       {/* BUY QUANTITY MODAL (AS REQUESTED) */}
       {activeBuyingProduct && (

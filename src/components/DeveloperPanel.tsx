@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { User, Product, Transaction, ChatMessage, BannerConfig } from '../types';
 import { Shield, Eye, Trash2, CheckCircle2, UserCheck, Tag, ShoppingCart, RefreshCw, MessageSquare, AlertCircle, Image as ImageIcon, Coins } from 'lucide-react';
+import { SVGLogo } from './SVGLogo';
 
 interface DeveloperPanelProps {
   currentUser: User;
@@ -1088,15 +1089,21 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
             <div className="bg-zinc-900/40 p-4 rounded-2xl border border-zinc-900 space-y-4">
               <div>
                 <label className="block text-[10.5px] font-black uppercase text-zinc-450 tracking-wider mb-2">
-                  Metode 1: Unggah Foto Dari Komputer / HP
+                  Metode 1: Unggah Logo Baru (Foto, Video, atau GIF)
                 </label>
-                <div className="relative group cursor-pointer border border-dashed border-zinc-800 hover:border-[#0084ff]/50 bg-zinc-950/70 p-5 rounded-xl text-center transition-all">
+                <div className="relative group cursor-pointer border border-dashed border-zinc-805 hover:border-[#0084ff]/50 bg-zinc-950/70 p-5 rounded-xl text-center transition-all">
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/*,video/*"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {
+                        const maxSize = 100 * 1024 * 1024; // 100MB limit
+                        if (file.size > maxSize) {
+                          alert(`Berkas logo terlalu besar! Maksimal ukuran berkas adalah 100MB. Berkas Anda: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+                          return;
+                        }
+
                         const reader = new FileReader();
                         reader.onload = (event) => {
                           if (event.target?.result) {
@@ -1114,8 +1121,8 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
                     <div className="p-2 bg-[#0084ff]/10 text-primary rounded-lg">
                       <ImageIcon size={20} />
                     </div>
-                    <span className="text-[11px] text-zinc-300 font-black">Klik atau Seret Foto Disini</span>
-                    <span className="text-[9px] text-zinc-500 font-bold">PNG, JPG, JPEG atau GIF (Rekomendasi Kotak/Square)</span>
+                    <span className="text-[11px] text-zinc-300 font-black">Klik atau Seret Berkas Disini</span>
+                    <span className="text-[9px] text-zinc-500 font-bold">Mendukung Foto, GIF Animasi, atau Video pendek (.MP4) (Maks 100MB)</span>
                   </div>
                 </div>
               </div>
@@ -1161,31 +1168,16 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
 
             {/* Right Column: Preview Panel */}
             <div className="bg-zinc-900/40 p-4 rounded-2xl border border-zinc-900 flex flex-col items-center justify-center text-center space-y-4">
-              <span className="text-[10px] uppercase font-black text-amber-500 tracking-wider">👀 Preview Tampilan Logo Anda</span>
+              <span className="text-[10px] uppercase font-black text-amber-500 tracking-wider">👀 Preview Tampilan Logo Anda (16:9)</span>
               
-              <div className="p-6 bg-[#0c0c0e] border border-zinc-850 rounded-3xl shadow-2xl flex flex-col items-center justify-center w-full max-w-xs aspect-square">
+              <div className="p-6 bg-[#0c0c0e] border border-zinc-850 rounded-3xl shadow-2xl flex flex-col items-center justify-center w-full max-w-xs">
                 {/* Dynamically loads based on updated localStorage */}
-                <div className="relative p-2.5 bg-zinc-900 border border-zinc-800 rounded-2xl mb-4 flex items-center justify-center">
-                  <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
-                    {localStorage.getItem('wast_custom_logo') ? (
-                      <img
-                        src={localStorage.getItem('wast_custom_logo') || ''}
-                        alt="Preview Logo"
-                        className="w-full h-full object-contain rounded-xl p-0.5"
-                        onError={(e) => {
-                          (e.target as any).src = "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=200";
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center rounded-xl bg-zinc-950 border border-[#0084ff]/20">
-                        <span className="text-[10px] text-zinc-500 font-bold">Vector Bear</span>
-                      </div>
-                    )}
-                  </div>
+                <div className="relative mb-4 flex items-center justify-center">
+                  <SVGLogo size={180} />
                 </div>
 
                 <div className="text-xs font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-400">
-                  {localStorage.getItem('wast_custom_logo') ? 'Logo Unggulan Anda' : 'Logo Beruang WAST (Default)'}
+                  {localStorage.getItem('wast_custom_logo') ? 'Logo Unggulan Anda' : 'Logo Bawaan 16:9 (Default)'}
                 </div>
                 <p className="text-[9px] text-zinc-500 font-semibold mt-1">
                   Logo ini akan menggantikan semua ikon di login screen, navbar, splash loading, dan footer.

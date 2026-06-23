@@ -19,279 +19,13 @@
   }
 }
 
-body {
-  font-family: var(--font-sans);
-  background-color: #0f0f11;
+html, body {
+  background: radial-gradient(circle at 50% 0%, #06173a 0%, #020712 100%) !important;
+  background-attachment: fixed !important;
   color: #f3f4f6;
+  font-family: var(--font-sans);
   overflow-x: hidden;
-  transition: background-color 0.3s, color 0.3s;
-}
-
-/* Light mode specific styling overrides if system/user disables dark mode */
-html:not(.dark) {
-  background-color: #f8fafc !important;
-}
-
-html:not(.dark) body {
-  background-color: #f8fafc !important;
-  color: #0f172a !important;
-}
-
-/* Override dark panels and backgrounds to clean, polished white/off-white cards */
-html:not(.dark) .bg-\[\#0d0d10\],
-html:not(.dark) .bg-\[\#0c0c0e\],
-html:not(.dark) .bg-\[\#0f0f11\],
-html:not(.dark) .bg-\[\#131315\],
-html:not(.dark) .bg-zinc-950,
-html:not(.dark) .bg-zinc-900,
-html:not(.dark) [class*="bg-zinc-9"],
-html:not(.dark) [class*="bg-black/75"],
-html:not(.dark) [class*="bg-black/85"],
-html:not(.dark) [class*="bg-black/80"],
-html:not(.dark) [class*="bg-zinc-950"],
-html:not(.dark) nav,
-html:not(.dark) .bg-zinc-900\/50,
-html:not(.dark) .bg-zinc-900\/80,
-html:not(.dark) .bg-zinc-950\/80,
-html:not(.dark) .bg-zinc-950\/85 {
-  background-color: #ffffff !important;
-  color: #0f172a !important;
-}
-
-/* Secondary gray highlights in place of dark grey elements */
-html:not(.dark) .bg-zinc-850,
-html:not(.dark) .bg-zinc-800,
-html:not(.dark) [class*="bg-zinc-8"],
-html:not(.dark) .bg-zinc-950\/50,
-html:not(.dark) .bg-zinc-900\/20,
-html:not(.dark) .bg-[#0d0d10] {
-  background-color: #ffffff !important;
-}
-
-html:not(.dark) .bg-red-950\/20,
-html:not(.dark) .bg-sky-500\/10,
-html:not(.dark) .bg-amber-500\/10 {
-  background-color: #f1f5f9 !important;
-}
-
-/* Inputs, dropdown selects, and text-fields overrides */
-html:not(.dark) input,
-html:not(.dark) select,
-html:not(.dark) textarea {
-  background-color: #f8fafc !important;
-  color: #0f172a !important;
-  border-color: #cbd5e1 !important;
-}
-
-html:not(.dark) input::placeholder {
-  color: #94a3b8 !important;
-}
-
-/* Clean text colors mapping for typography high-contrast readability */
-html:not(.dark) h1,
-html:not(.dark) h2,
-html:not(.dark) h3,
-html:not(.dark) h4,
-html:not(.dark) h5,
-html:not(.dark) h6,
-html:not(.dark) .text-zinc-100,
-html:not(.dark) .text-zinc-200,
-html:not(.dark) .text-zinc-300,
-html:not(.dark) .text-zinc-350,
-html:not(.dark) .text-zinc-400,
-html:not(.dark) .text-zinc-450,
-html:not(.dark) .text-zinc-500,
-html:not(.dark) .text-zinc-650,
-html:not(.dark) .text-\[\#f4f4f6\],
-html:not(.dark) [class*="text-zinc-"],
-html:not(.dark) [class*="text-slate-"] {
-  color: #0d1117 !important;
-}
-
-html:not(.dark) .text-zinc-500,
-html:not(.dark) .text-zinc-550,
-html:not(.dark) .text-zinc-600,
-html:not(.dark) .text-zinc-650,
-html:not(.dark) [class*="text-zinc-5"],
-html:not(.dark) [class*="text-zinc-6"] {
-  color: #4b5563 !important;
-}
-
-/* Status colors and brand accent contrast preservation in Light Mode */
-html:not(.dark) .text-primary,
-html:not(.dark) [class*="text-[#0084ff]"] {
-  color: #0084ff !important;
-}
-html:not(.dark) .text-accent,
-html:not(.dark) [class*="text-accent"] {
-  color: #00e5ff !important;
-}
-html:not(.dark) .text-emerald-500,
-html:not(.dark) .text-green-500 {
-  color: #10b981 !important;
-}
-html:not(.dark) .text-red-500,
-html:not(.dark) .text-red-400 {
-  color: #ef4444 !important;
-}
-html:not(.dark) .text-amber-500,
-html:not(.dark) .text-yellow-500,
-html:not(.dark) .text-amber-400 {
-  color: #f59e0b !important;
-}
-
-/* Ensure buttons, active indicators, and explicit keep-text-white retain bright/white text color in light mode */
-html:not(.dark) button .text-white,
-html:not(.dark) button.bg-primary,
-html:not(.dark) button.bg-primary *,
-html:not(.dark) .bg-primary *,
-html:not(.dark) .bg-[#0084ff] *,
-html:not(.dark) .keep-text-white,
-html:not(.dark) .keep-text-white *,
-html:not(.dark) .bg-red-600,
-html:not(.dark) .bg-red-650,
-html:not(.dark) .bg-red-600 *,
-html:not(.dark) .bg-red-650 *,
-html:not(.dark) .keep-sold-out-badge,
-html:not(.dark) .keep-sold-out-badge * {
-  color: #ffffff !important;
-}
-
-html:not(.dark) .keep-bg-dark * {
-  color: #f3f4f6 !important;
-}
-html:not(.dark) .keep-bg-dark h1,
-html:not(.dark) .keep-bg-dark h2,
-html:not(.dark) .keep-bg-dark h3,
-html:not(.dark) .keep-bg-dark h5,
-html:not(.dark) .keep-bg-dark h6 {
-  color: #ffffff !important;
-}
-
-/* Overwrite borders for clean visual borders & lines in light theme */
-html:not(.dark) .border-zinc-800,
-html:not(.dark) .border-zinc-805,
-html:not(.dark) .border-zinc-850,
-html:not(.dark) .border-zinc-900,
-html:not(.dark) [class*="border-zinc-"],
-html:not(.dark) .border-zinc-800\/45,
-html:not(.dark) .border-zinc-800_30,
-html:not(.dark) .border-zinc-800\/60,
-html:not(.dark) .border-zinc-850\/60 {
-  border-color: #cbd5e1 !important;
-}
-
-/* Hover effects background states in light mode */
-html:not(.dark) .hover\:bg-zinc-800:hover,
-html:not(.dark) .hover\:bg-zinc-900\/40:hover,
-html:not(.dark) .hover\:bg-zinc-850:hover,
-html:not(.dark) .hover\:bg-zinc-950:hover {
-  background-color: #cbd5e1 !important;
-}
-
-/* Special styling for gradient headers / PASAR TERBARU card in light mode */
-html:not(.dark) .bg-gradient-to-r.from-zinc-900.via-zinc-850.to-zinc-900 {
-  background-image: linear-gradient(to right, #ffffff, #f1f5f9, #ffffff) !important;
-  border-color: #cbd5e1 !important;
-}
-
-html:not(.dark) .text-transparent.bg-clip-text.bg-gradient-to-r:not(.keep-gradient) {
-  background-image: none !important;
-  color: #0f172a !important;
-}
-
-/* Custom premium classes to prevent text and color overrides inside dark panels/banners in light mode */
-html:not(.dark) .keep-gradient {
-  background-image: linear-gradient(to right, #00c8ff, #0084ff, #0055ff) !important;
-  color: transparent !important;
-  -webkit-background-clip: text !important;
-  background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-}
-
-html:not(.dark) .keep-text-white {
-  color: #ffffff !important;
-}
-
-html:not(.dark) .keep-text-zinc {
-  color: #cbd5e1 !important;
-}
-
-/* Maintain dark backdrop for product image slots in Light Mode so transparent/light game assets stand out beautifully */
-html:not(.dark) .keep-bg-dark,
-html .keep-bg-dark,
-.keep-bg-dark {
-  background-color: #0d0d10 !important;
-  background: #0d0d10 !important;
-  border-color: #1e293b !important;
-}
-
-/* Ensure sold out overlay works beautifully with proper shading in both light & dark mode */
-html:not(.dark) .keep-sold-out-overlay,
-html .keep-sold-out-overlay,
-.keep-sold-out-overlay {
-  background-color: rgba(0, 0, 0, 0.75) !important;
-  background: rgba(0, 0, 0, 0.75) !important;
-}
-
-/* Keep sold out badges vibrantly red and highly legible against dark backgrounds */
-html:not(.dark) .keep-sold-out-badge,
-html .keep-sold-out-badge,
-.keep-sold-out-badge {
-  background-color: #ef4444 !important;
-  color: #ffffff !important;
-  font-weight: 900 !important;
-}
-
-/* Maintain logo contrast and readability across light/dark themes */
-.logo-shield-bg {
-  transition: fill 0.3s ease, stroke 0.3s ease;
-}
-html:not(.dark) .logo-shield-bg {
-  fill: #f1f5f9 !important; /* Premium light slate filling */
-  stroke: #0084ff !important;
-}
-html:not(.dark) .logo-shield-inner {
-  stroke: #00e5ff !important;
-  opacity: 0.55 !important;
-}
-
-/* Force icons and text inside primary/red/emerald buttons, inputs, and indicators to remain bright white in Light Mode */
-html:not(.dark) button.bg-primary svg,
-html:not(.dark) [class*="bg-primary"] svg,
-html:not(.dark) [class*="bg-[#0084ff]"] svg,
-html:not(.dark) .bg-emerald-500 svg,
-html:not(.dark) .bg-emerald-600 svg,
-html:not(.dark) .bg-red-500 svg,
-html:not(.dark) .bg-red-600 svg,
-html:not(.dark) .bg-red-650 svg,
-html:not(.dark) .keep-sold-out-badge svg {
-  color: #ffffff !important;
-  stroke: #ffffff !important;
-}
-
-html:not(.dark) .bg-primary [class*="text-zinc-"],
-html:not(.dark) [class*="bg-primary"] [class*="text-zinc-"],
-html:not(.dark) [class*="bg-[#0084ff]"] [class*="text-zinc-"],
-html:not(.dark) .bg-emerald-500 [class*="text-zinc-"],
-html:not(.dark) .bg-emerald-600 [class*="text-zinc-"],
-html:not(.dark) .bg-red-500 [class*="text-zinc-"],
-html:not(.dark) .bg-red-650 [class*="text-zinc-"],
-html:not(.dark) .bg-red-600 [class*="text-zinc-"],
-html:not(.dark) .keep-text-white [class*="text-zinc-"],
-html:not(.dark) .keep-sold-out-badge [class*="text-zinc-"] {
-  color: #ffffff !important;
-}
-
-/* Custom scrollbars in light mode */
-html:not(.dark) ::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
-html:not(.dark) ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-}
-html:not(.dark) ::-webkit-scrollbar-thumb:hover {
-  background: #0084FF;
+  min-height: 100vh;
 }
 
 /* Custom premium scrollbar */
@@ -300,10 +34,10 @@ html:not(.dark) ::-webkit-scrollbar-thumb:hover {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #18181c;
+  background: #020712;
 }
 ::-webkit-scrollbar-thumb {
-  background: #3f3f46;
+  background: #1e293b;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
@@ -312,8 +46,8 @@ html:not(.dark) ::-webkit-scrollbar-thumb:hover {
 
 /* Ensure backgrounds and borders of default profile graphics always stay dark and beautiful with crisp white text / icons */
 .always-keep-profile-dark {
-  background-color: #09090b !important;
-  border-color: #27272a !important;
+  background-color: #020712 !important;
+  border-color: #1e293b !important;
   color: #ffffff !important;
 }
 .always-keep-profile-dark svg,
@@ -324,73 +58,25 @@ html:not(.dark) ::-webkit-scrollbar-thumb:hover {
   stroke: #ffffff !important;
 }
 
-/* Ensure any cards/containers styled with keep-bg-dark keep their dark theme background, inputs, icons, borders, and white fonts in both light/dark */
-html:not(.dark) .keep-bg-dark,
-html:not(.dark) .always-keep-profile-dark {
-  background-color: #10121a !important; /* Constant premium slate/zinc dark color */
-  border-color: #1e293b !important;
-  color: #f3f4f6 !important;
+.logo-shield-bg {
+  transition: fill 0.3s ease, stroke 0.3s ease;
 }
 
-/* Maintain light borders, white font colors, and clear contrast inside elements tagged with keep-bg-dark */
-html:not(.dark) .keep-bg-dark *,
-html:not(.dark) .always-keep-profile-dark * {
-  color: #f3f4f6 !important;
+/* Ensure sold out overlay works beautifully with proper shading */
+.keep-sold-out-overlay {
+  background-color: rgba(0, 0, 0, 0.75) !important;
+  background: rgba(0, 0, 0, 0.75) !important;
 }
 
-html:not(.dark) .keep-bg-dark input,
-html:not(.dark) .keep-bg-dark select,
-html:not(.dark) .keep-bg-dark textarea {
-  background-color: #090b11 !important;
+/* Keep sold out badges vibrantly red and highly legible against dark backgrounds */
+.keep-sold-out-badge {
+  background-color: #ef4444 !important;
   color: #ffffff !important;
+  font-weight: 900 !important;
+}
+
+.keep-bg-dark {
+  background-color: #040d1f !important;
+  background: #040d1f !important;
   border-color: #1e293b !important;
-}
-
-html:not(.dark) .keep-bg-dark input::placeholder,
-html:not(.dark) .keep-bg-dark select::placeholder,
-html:not(.dark) .keep-bg-dark textarea::placeholder {
-  color: #64748b !important;
-}
-
-html:not(.dark) .keep-bg-dark border,
-html:not(.dark) .keep-bg-dark .border-zinc-800,
-html:not(.dark) .keep-bg-dark .border-zinc-850,
-html:not(.dark) .keep-bg-dark [class*="border-zinc-"] {
-  border-color: #1e293b !important;
-}
-
-html:not(.dark) .keep-bg-dark .bg-zinc-950,
-html:not(.dark) .keep-bg-dark [class*="bg-zinc-950"] {
-  background-color: #05070a !important;
-}
-
-html:not(.dark) .keep-bg-dark .text-primary,
-html:not(.dark) .always-keep-profile-dark .text-primary,
-html:not(.dark) .keep-bg-dark [class*="text-[#0084ff]"] {
-  color: #0084ff !important;
-}
-
-html:not(.dark) .keep-bg-dark .text-zinc-650,
-html:not(.dark) .keep-bg-dark .text-zinc-550,
-html:not(.dark) .keep-bg-dark .text-zinc-500,
-html:not(.dark) .keep-bg-dark .text-zinc-400 {
-  color: #94a3b8 !important;
-}
-
-html:not(.dark) .keep-bg-dark .text-zinc-100,
-html:not(.dark) .keep-bg-dark .text-zinc-200,
-html:not(.dark) .keep-bg-dark .text-zinc-300,
-html:not(.dark) .keep-bg-dark .text-white {
-  color: #ffffff !important;
-}
-
-/* Keep the branding color gradients and active tabs fixed inside keep-bg-dark */
-html:not(.dark) .keep-bg-dark .bg-primary {
-  background-color: #0084ff !important;
-}
-
-html:not(.dark) .keep-bg-dark svg,
-html:not(.dark) .always-keep-profile-dark svg {
-  color: #ffffff !important;
-  stroke: #ffffff !important;
 }

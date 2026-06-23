@@ -23,13 +23,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   
-  // Responsive sizes
-  const [logoSize, setLogoSize] = useState(window.innerWidth < 640 ? 56 : 80);
+  // Responsive sizes for 16:9 logo width
+  const [logoSize, setLogoSize] = useState(window.innerWidth < 640 ? 140 : 200);
   const [wordmarkSize, setWordmarkSize] = useState<'lg' | 'xl'>(window.innerWidth < 640 ? 'lg' : 'xl');
 
   useEffect(() => {
     const handleResize = () => {
-      setLogoSize(window.innerWidth < 640 ? 56 : 80);
+      setLogoSize(window.innerWidth < 640 ? 140 : 200);
       setWordmarkSize(window.innerWidth < 640 ? 'lg' : 'xl');
     };
     window.addEventListener('resize', handleResize);
@@ -166,6 +166,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const maxSize = 100 * 1024 * 1024; // 100MB limit
+      if (file.size > maxSize) {
+        triggerToast('Gagal! Ukuran foto melebihi 100MB.', true);
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
