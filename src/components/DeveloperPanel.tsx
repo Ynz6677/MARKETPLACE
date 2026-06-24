@@ -25,7 +25,6 @@ interface DeveloperPanelProps {
   banner: BannerConfig[];
   onUpdateBanner: (banner: BannerConfig | BannerConfig[]) => void;
   onUpdateUserBalance: (userId: string, balance: number) => void;
-  onResetDatabase?: () => void;
 }
 
 type DevTab = 'users' | 'products' | 'transactions' | 'chats' | 'banner' | 'branding';
@@ -45,7 +44,6 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
   banner,
   onUpdateBanner,
   onUpdateUserBalance,
-  onResetDatabase,
 }) => {
   const [activeTab, setActiveTab] = useState<DevTab>('users');
   const [userBadgeInputs, setUserBadgeInputs] = useState<{ [userId: string]: string }>({});
@@ -164,8 +162,8 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
           </div>
         </div>
 
-        {/* Mini stats */}
-        <div className="flex gap-2">
+        {/* Mini stats & Actions */}
+        <div className="flex gap-2 items-center">
           <div className="bg-zinc-950 px-2.5 py-1 rounded-lg border border-zinc-900 flex flex-col items-center min-w-14">
             <span className="text-[8px] text-zinc-500 font-bold uppercase">User</span>
             <span className="text-xs font-bold text-primary">{users.length}</span>

