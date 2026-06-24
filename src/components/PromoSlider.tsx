@@ -45,9 +45,9 @@ export const PromoSlider: React.FC<PromoSliderProps> = ({ banners }) => {
   };
 
   return (
-    <div className="relative w-full max-w-full mx-auto select-none group/slider">
+    <div className="relative w-full max-w-full md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto select-none group/slider">
       {/* Slider viewport container */}
-      <div className="w-full overflow-hidden rounded-2xl aspect-[16/9] relative bg-zinc-950 border border-zinc-850">
+      <div className="w-full overflow-hidden rounded-2xl aspect-[21/9] sm:aspect-[2.5/1] relative bg-zinc-950 border border-zinc-850">
         <motion.div
           className="flex w-full h-full cursor-grab active:cursor-grabbing"
           drag="x"

@@ -14,6 +14,9 @@ CREATE TABLE IF NOT EXISTS public.users (
 
 -- Enable RLS for users
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read access on users" ON public.users;
+DROP POLICY IF EXISTS "Allow public insert access on users" ON public.users;
+DROP POLICY IF EXISTS "Allow public update access on users" ON public.users;
 CREATE POLICY "Allow public read access on users" ON public.users FOR SELECT USING (true);
 CREATE POLICY "Allow public insert access on users" ON public.users FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow public update access on users" ON public.users FOR UPDATE USING (true);
@@ -33,6 +36,8 @@ CREATE TABLE IF NOT EXISTS public.products (
 
 -- Enable RLS for products
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read access on products" ON public.products;
+DROP POLICY IF EXISTS "Allow public write access on products" ON public.products;
 CREATE POLICY "Allow public read access on products" ON public.products FOR SELECT USING (true);
 CREATE POLICY "Allow public write access on products" ON public.products FOR ALL USING (true);
 
@@ -52,6 +57,8 @@ CREATE TABLE IF NOT EXISTS public.transactions (
 
 -- Enable RLS for transactions
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read access on transactions" ON public.transactions;
+DROP POLICY IF EXISTS "Allow public write access on transactions" ON public.transactions;
 CREATE POLICY "Allow public read access on transactions" ON public.transactions FOR SELECT USING (true);
 CREATE POLICY "Allow public write access on transactions" ON public.transactions FOR ALL USING (true);
 
@@ -69,6 +76,8 @@ CREATE TABLE IF NOT EXISTS public.chats (
 
 -- Enable RLS for chats
 ALTER TABLE public.chats ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read access on chats" ON public.chats;
+DROP POLICY IF EXISTS "Allow public write access on chats" ON public.chats;
 CREATE POLICY "Allow public read access on chats" ON public.chats FOR SELECT USING (true);
 CREATE POLICY "Allow public write access on chats" ON public.chats FOR ALL USING (true);
 
@@ -90,6 +99,8 @@ CREATE TABLE IF NOT EXISTS public.banner (
 
 -- Enable RLS for banner
 ALTER TABLE public.banner ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read access on banner" ON public.banner;
+DROP POLICY IF EXISTS "Allow public write access on banner" ON public.banner;
 CREATE POLICY "Allow public read access on banner" ON public.banner FOR SELECT USING (true);
 CREATE POLICY "Allow public write access on banner" ON public.banner FOR ALL USING (true);
 
@@ -106,6 +117,8 @@ CREATE TABLE IF NOT EXISTS public.branding (
 
 -- Enable RLS for branding
 ALTER TABLE public.branding ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read access on branding" ON public.branding;
+DROP POLICY IF EXISTS "Allow public write access on branding" ON public.branding;
 CREATE POLICY "Allow public read access on branding" ON public.branding FOR SELECT USING (true);
 CREATE POLICY "Allow public write access on branding" ON public.branding FOR ALL USING (true);
 

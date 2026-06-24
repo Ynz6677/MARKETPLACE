@@ -636,8 +636,8 @@ export default function App() {
     };
     setCurrentUser(guestProfile);
     localStorage.setItem('sv_current_user', JSON.stringify(guestProfile));
-    setActiveTab('home');
-    triggerToast('Anda telah keluar ke profil Guest.', 'info');
+    setForceAuthScreen(true);
+    triggerToast('Anda telah keluar. Silakan login kembali.', 'info');
   };
 
   // Profile modification

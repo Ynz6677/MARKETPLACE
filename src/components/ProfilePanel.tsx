@@ -217,19 +217,6 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({
               Simpan Perubahan Profil
             </button>
 
-            {currentUser.id !== 'u_guest' && onViewUserStorefront && (
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => onViewUserStorefront(currentUser.id)}
-                  className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 py-2.5 rounded-xl font-extrabold text-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer shadow-lg"
-                >
-                  <UserIcon size={13} />
-                  Buka Etalase Jualan Saya
-                </button>
-              </div>
-            )}
-
           </form>
         )}
 
