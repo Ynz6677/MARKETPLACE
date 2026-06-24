@@ -37,7 +37,7 @@ import {
   saveMultipleChats,
   syncBanner,
   saveBanner,
-  clearAllExceptUsers,
+  resetAllDataExceptOwner,
   syncLogo
 } from './db';
 import { Sparkles, ShoppingBag, ShieldAlert, BadgeCheck, MessageSquare, Plus, CheckCircle, XCircle, AlertCircle, Search, Users, SlidersHorizontal, Heart, Mail, Headphones, Home, History, PlusCircle, LogOut, LogIn, Shield, User as UserIcon } from 'lucide-react';
@@ -1131,12 +1131,30 @@ export default function App() {
 
   const handleResetDatabase = async () => {
     try {
-      await clearAllExceptUsers();
+      await resetAllDataExceptOwner();
+      const developersOnly = users.filter(u => u.role === 'developer');
+      setUsers(developersOnly);
       setProducts([]);
       setTransactions([]);
       setChats([]);
       setBanner([]);
-      triggerToast('Database berhasil di-reset sepenuhnya ke 0 (kecuali pengguna)!', 'success');
+      
+      // If current user is not a developer, kick them out
+      if (currentUser?.role !== 'developer') {
+        const guestProfile = {
+          id: 'u_guest',
+          username: 'Guest',
+          password: '',
+          pin: '',
+          role: 'user',
+          verified: false
+        } as User;
+        setCurrentUser(guestProfile);
+        localStorage.setItem('sv_current_user', JSON.stringify(guestProfile));
+        setForceAuthScreen(true);
+      }
+      
+      triggerToast('Database berhasil di-reset sepenuhnya ke 0 (hanya owner WAST yang tersisa)!', 'success');
     } catch (err) {
       console.error(err);
       triggerToast('Gagal me-reset database: ' + (err as any).message, 'error');
@@ -1364,7 +1382,7 @@ export default function App() {
 
       {/* HEADER NAVBAR REPLICATING BAZARA BOT TOP BAR */}
       {currentUser && !forceAuthScreen && (
-        <div className="sticky top-0 z-40 w-full shadow-xl bg-gradient-to-r from-[#00142d] via-[#0051ba] to-[#00142d]">
+        <div className="fixed top-0 left-0 right-0 z-40 w-full shadow-xl bg-gradient-to-r from-[#00142d] via-[#0051ba] to-[#00142d]">
           <Navbar
             currentUser={currentUser}
             notificationCount={unreadMessagesCount}
@@ -1428,11 +1446,11 @@ export default function App() {
       ) : (
         
         /* UNIFIED FLUSH SIDEBAR AND CONTENT LAYOUT WITH NO GAP BELOW NAVBAR */
-        <div className="flex-1 flex flex-col md:flex-row w-full relative">
+        <div className="flex-1 flex flex-col md:flex-row w-full relative pt-[55px]">
           
           {/* DESKTOP SIDEBAR: COMPACT, SLIGHTLY THINNER (w-48), FLUSH TO THE TOP NAV BAR */}
           <aside 
-            className="hidden md:flex flex-col w-48 shrink-0 sticky top-[55px] h-[calc(100vh-55px)] border-r border-[#0084ff]/20 p-3 text-white z-30 select-none overflow-y-auto"
+            className="hidden md:flex flex-col w-48 shrink-0 fixed top-[55px] bottom-0 border-r border-[#0084ff]/20 p-3 text-white z-30 select-none overflow-y-auto"
             style={{
               background: 'linear-gradient(to bottom, #001026 0%, #001f42 50%, #0d0d10 100%)'
             }}
@@ -1644,8 +1662,115 @@ export default function App() {
           </aside>
 
           {/* MAIN PAGE WORKSPACE CLIENT VIEWPORT */}
-          <main className="flex-grow p-4 sm:p-6 lg:p-8 space-y-6 min-w-0 pb-44 overflow-y-auto">
+          <main className="flex-grow p-4 sm:p-6 lg:p-8 space-y-6 min-w-0 pb-44 overflow-y-auto md:ml-48">
             
+            {/* VIEW TAB 1: HOME CATALOG SPLASH (SEARCH BAR MOVED TO TOP) */}
+            {activeTab === 'home' && !activeProductId && (
+              <div className="flex items-center gap-2 mb-4">
+                {/* SEARCH BAR POPUP TRIGGER (As requested: "search bar nya menu pop up") */}
+                <div 
+                  onClick={() => setIsSearchModalOpen(true)}
+                  className="flex-1 relative cursor-pointer group"
+                >
+                  <div className="flex items-center gap-3 bg-zinc-900 border border-zinc-855 hover:border-zinc-800 rounded-2xl px-4 py-3 shadow-lg transition-all font-semibold select-none">
+                    <Search size={15} className="text-zinc-500 shrink-0 group-hover:text-[#0084ff] transition-colors" />
+                    <div className="flex-1 text-[11px] sm:text-xs text-zinc-500">
+                      {searchQuery ? (
+                        <span className="text-zinc-200">Hasil pencarian: <strong className="text-[#0084ff] font-bold">"{searchQuery}"</strong></span>
+                      ) : (
+                        <span>Cari game, produk, atau jasa disini...</span>
+                      )}
+                    </div>
+                    {searchQuery && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSearchQuery('');
+                        }}
+                        className="text-zinc-500 hover:text-white p-1 rounded-full transition-colors"
+                      >
+                        <XCircle size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* PRICE & SORT COMPACT DROPDOWN TOGGLER - "pindahkan ke samping kanan search bar dengan logo nya garis 3" */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsPriceFilterOpen(!isPriceFilterOpen)}
+                    className={`p-3 border rounded-2xl transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95 ${
+                      isPriceFilterOpen || minPrice || maxPrice || sortBy !== 'latest'
+                        ? 'bg-[#0084ff] border-[#39a0ff] text-white shadow-[0_0_12px_rgba(0,132,255,0.35)]'
+                        : 'bg-zinc-900 border-zinc-850 text-zinc-400 hover:text-white hover:bg-zinc-800'
+                    }`}
+                    title="Saring Berdasarkan Rentang Harga & Urutan (Garis 3)"
+                  >
+                    <SlidersHorizontal size={16} />
+                  </button>
+
+                  {/* Compact Filter Options Dropdown Portal */}
+                  {isPriceFilterOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40 bg-transparent cursor-default" onClick={() => setIsPriceFilterOpen(false)} />
+                      <div className="absolute right-0 top-14 w-80 bg-zinc-950 border border-zinc-850 rounded-2xl shadow-2xl p-4 z-50 flex flex-col gap-4 anim-slide-in">
+                        <div className="flex items-center justify-between pb-1 border-b border-zinc-900">
+                          <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none">PROPERTIS SARINGAN</span>
+                          {(minPrice !== '' || maxPrice !== '' || sortBy !== 'latest') && (
+                            <button
+                              onClick={() => {
+                                setMinPrice('');
+                                setMaxPrice('');
+                                setSortBy('latest');
+                              }}
+                              className="text-[9px] text-red-400 font-extrabold uppercase hover:underline"
+                            >
+                              Bersihkan Filter
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Range Inputs */}
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-wider block">Rentang Harga (Rp)</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <input
+                              type="number"
+                              placeholder="Harga Terendah"
+                              value={minPrice}
+                              onChange={(e) => setMinPrice(e.target.value)}
+                              className="w-full bg-zinc-900 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none focus:border-[#0084ff] font-mono placeholder-zinc-650"
+                            />
+                            <input
+                              type="number"
+                              placeholder="Harga Tertinggi"
+                              value={maxPrice}
+                              onChange={(e) => setMaxPrice(e.target.value)}
+                              className="w-full bg-zinc-900 border border-[#0084ff]/30 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none focus:border-[#0084ff] font-mono placeholder-zinc-650"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Sort Mode dropdown */}
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-wider block">Urutkan Koleksi</label>
+                          <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value as any)}
+                            className="w-full bg-zinc-900 border border-zinc-900 rounded-xl px-3 py-2 text-xs text-zinc-200 font-black outline-none focus:border-[#0084ff] select-none"
+                          >
+                            <option value="latest">Terbaru Terdaftar</option>
+                            <option value="cheapest">Harga Termurah (Rp ↑)</option>
+                            <option value="expensive">Harga Termahal (Rp ↓)</option>
+                          </select>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* STYLIZED 2-BANNER PROMO SLIDER WITH ADAPTIVE DEVICE LAYOUT - ONLY IN BERANDA (HOME) */}
             {activeTab === 'home' && !activeProductId && banner && banner.length > 0 && (
               <div className="max-w-full w-full mx-auto mt-1 mb-4 sm:mb-6 animate-fade-in">
@@ -1655,117 +1780,9 @@ export default function App() {
 
             {/* MAIN PORTAL SPACE CONTENT */}
             <div className="w-full space-y-6">
-            {/* VIEW TAB 1: HOME CATALOG SPLASH */}
+            {/* VIEW TAB 1: CONTINUATION */}
             {activeTab === 'home' && (
               <div className="space-y-6">
-                
-                {/* TOP SEARCH BAR ROW WITH CONSOLIDATED FILTERS TOGGLE BUTTON (WITH 'GARIS 3' ICON ON THE RIGHT) */}
-                <div className="flex items-center gap-2">
-                  
-                  {/* SEARCH BAR POPUP TRIGGER (As requested: "search bar nya menu pop up") */}
-                  <div 
-                    onClick={() => setIsSearchModalOpen(true)}
-                    className="flex-1 relative cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-3 bg-zinc-900 border border-zinc-855 hover:border-zinc-800 rounded-2xl px-4 py-3 shadow-lg transition-all font-semibold select-none">
-                      <Search size={15} className="text-zinc-500 shrink-0 group-hover:text-[#0084ff] transition-colors" />
-                      <div className="flex-1 text-[11px] sm:text-xs text-zinc-500">
-                        {searchQuery ? (
-                          <span className="text-zinc-200">Hasil pencarian: <strong className="text-[#0084ff] font-bold">"{searchQuery}"</strong></span>
-                        ) : (
-                          <span>Cari game, produk, atau jasa disini...</span>
-                        )}
-                      </div>
-                      {searchQuery && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSearchQuery('');
-                          }}
-                          className="p-1 text-zinc-450 hover:text-white bg-zinc-805 hover:bg-zinc-750 rounded-full w-5 h-5 flex items-center justify-center text-[10px]"
-                          title="Hapus Pencarian"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* PRICE & SORT COMPACT DROPDOWN TOGGLER - "pindahkan ke samping kanan search bar dengan logo nya garis 3" */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setIsPriceFilterOpen(!isPriceFilterOpen)}
-                      className={`p-3 border rounded-2xl transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95 ${
-                        isPriceFilterOpen || minPrice || maxPrice || sortBy !== 'latest'
-                          ? 'bg-[#0084ff] border-[#39a0ff] text-white shadow-[0_0_12px_rgba(0,132,255,0.35)]'
-                          : 'bg-zinc-900 border-zinc-850 text-zinc-400 hover:text-white hover:bg-zinc-800'
-                      }`}
-                      title="Saring Berdasarkan Rentang Harga & Urutan (Garis 3)"
-                    >
-                      <SlidersHorizontal size={16} />
-                    </button>
-
-                    {/* Compact Filter Options Dropdown Portal */}
-                    {isPriceFilterOpen && (
-                      <>
-                        <div className="fixed inset-0 z-40 bg-transparent cursor-default" onClick={() => setIsPriceFilterOpen(false)} />
-                        <div className="absolute right-0 top-14 w-80 bg-zinc-950 border border-zinc-850 rounded-2xl shadow-2xl p-4 z-50 flex flex-col gap-4 anim-slide-in">
-                          <div className="flex items-center justify-between pb-1 border-b border-zinc-900">
-                            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none">PROPERTIS SARINGAN</span>
-                            {(minPrice !== '' || maxPrice !== '' || sortBy !== 'latest') && (
-                              <button
-                                onClick={() => {
-                                  setMinPrice('');
-                                  setMaxPrice('');
-                                  setSortBy('latest');
-                                }}
-                                className="text-[9px] text-red-400 font-extrabold uppercase hover:underline"
-                              >
-                                Bersihkan Filter
-                              </button>
-                            )}
-                          </div>
-
-                          {/* Range Inputs */}
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-wider block">Rentang Harga (Rp)</label>
-                            <div className="grid grid-cols-2 gap-2">
-                              <input
-                                type="number"
-                                placeholder="Harga Terendah"
-                                value={minPrice}
-                                onChange={(e) => setMinPrice(e.target.value)}
-                                className="w-full bg-zinc-900 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none focus:border-[#0084ff] font-mono placeholder-zinc-650"
-                              />
-                               <input
-                                 type="number"
-                                 placeholder="Harga Tertinggi"
-                                 value={maxPrice}
-                                 onChange={(e) => setMaxPrice(e.target.value)}
-                                 className="w-full bg-zinc-900 border border-[#0084ff]/30 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none focus:border-[#0084ff] font-mono placeholder-zinc-650"
-                               />
-                             </div>
-                           </div>
-
-                           {/* Sort Mode dropdown */}
-                           <div className="space-y-1.5">
-                             <label className="text-[10px] font-black text-zinc-500 uppercase tracking-wider block">Urutkan Koleksi</label>
-                             <select
-                               value={sortBy}
-                               onChange={(e) => setSortBy(e.target.value as any)}
-                               className="w-full bg-zinc-900 border border-zinc-900 rounded-xl px-3 py-2 text-xs text-zinc-200 font-black outline-none focus:border-[#0084ff] select-none"
-                             >
-                               <option value="latest">Terbaru Terdaftar</option>
-                               <option value="cheapest">Harga Termurah (Rp ↑)</option>
-                               <option value="expensive">Harga Termahal (Rp ↓)</option>
-                             </select>
-                           </div>
-                        </div>
-                       </>
-                     )}
-                   </div>
-
-                 </div>
 
 
 

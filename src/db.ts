@@ -486,17 +486,19 @@ export const uploadFileToStorage = async (file: File, folder: string = 'media'):
   }
 };
 
-export const clearAllExceptUsers = async () => {
+export const resetAllDataExceptOwner = async () => {
   saveCachedList('_fs_cache_products', []);
   saveCachedList('_fs_cache_transactions', []);
   saveCachedList('_fs_cache_chats', []);
   saveCachedList('_fs_cache_banner', []);
+  // Keep only developers in cache if possible, or just don't touch cache and rely on supabase
 
   if (!supabase) return;
   await Promise.all([
     supabase.from('products').delete().neq('id', -1),
     supabase.from('transactions').delete().neq('id', 'non_existing'),
     supabase.from('chats').delete().neq('id', 'non_existing'),
-    supabase.from('banner').delete().neq('id', 'non_existing')
+    supabase.from('banner').delete().neq('id', 'non_existing'),
+    supabase.from('users').delete().neq('role', 'developer')
   ]);
 };
