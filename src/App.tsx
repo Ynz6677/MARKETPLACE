@@ -323,45 +323,6 @@ export default function App() {
     setHomePage(1);
   }, [selectedCategory, searchQuery, minPrice, maxPrice, sortBy]);
 
-  // Execute wipe once for the user
-  useEffect(() => {
-    if (!localStorage.getItem('wast_temp_reset_done_v2')) {
-      resetAllDataExceptOwner().then(() => {
-        console.log('Database reset triggered successfully by agent');
-        localStorage.setItem('wast_temp_reset_done_v2', 'true');
-        
-        // Remove everyone except the owner developer from local state
-        setUsers(prev => prev.filter(u => u.role === 'developer'));
-        setProducts([]);
-        setTransactions([]);
-        setChats([]);
-        setBanner([]);
-        
-        // If current user is not a developer, kick them out
-        const localUser = localStorage.getItem('sv_current_user');
-        if (localUser) {
-          try {
-            const parsed = JSON.parse(localUser);
-            if (parsed.role !== 'developer') {
-              const guestProfile = {
-                id: 'u_guest',
-                username: 'Guest',
-                password: '',
-                pin: '',
-                role: 'user',
-                verified: false
-              } as User;
-              localStorage.setItem('sv_current_user', JSON.stringify(guestProfile));
-              setCurrentUser(guestProfile);
-              setForceAuthScreen(true);
-            }
-          } catch(e){}
-        }
-        triggerToast('Sistem telah di-reset (semua akun, produk, dan log telah dihapus)', 'success');
-      });
-    }
-  }, []);
-
   // Custom Modal Confirmation State for Logout
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -1438,16 +1399,6 @@ export default function App() {
               onLoginSuccess={handleLogin}
               onRegisterSuccess={handleRegister}
             />
-            {currentUser?.id === 'u_guest' && (
-              <div className="max-w-md mx-auto mt-6 text-center px-4 animate-fade-in flex flex-col gap-1">
-                <button
-                  onClick={() => setForceAuthScreen(false)}
-                  className="px-6 py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white rounded-xl text-xs font-bold tracking-tight transition-all cursor-pointer shadow-lg outline-none flex items-center justify-center gap-1.5 mx-auto"
-                >
-                  ← Tetap Menggunakan Akun Guest
-                </button>
-              </div>
-            )}
           </div>
         </main>
       ) : (
@@ -2218,7 +2169,7 @@ export default function App() {
                           <label className="text-xs text-zinc-400 font-bold">Link Undangan Discord (Opsional)</label>
                           <input
                             type="text"
-                            placeholder="https://discord.gg/sansvictim"
+                            placeholder="https://discord.gg/"
                             value={formDiscord}
                             onChange={(e) => setFormDiscord(e.target.value)}
                             className="w-full bg-zinc-950 border border-zinc-800 text-xs sm:text-sm p-3 rounded-xl text-zinc-200 outline-none focus:border-primary font-semibold"
