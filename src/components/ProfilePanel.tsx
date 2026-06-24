@@ -5,7 +5,8 @@
 
 import React, { useState } from 'react';
 import { User, Product } from '../types';
-import { Settings, Save, Lock, User as UserIcon, Shield, Camera, Edit2, Trash2, LogOut } from 'lucide-react';
+import { Settings, Save, Lock, User as UserIcon, Shield, Camera, Edit2, Trash2, LogOut, ShoppingBag } from 'lucide-react';
+import { ImageCropperModal } from './ImageCropperModal';
 
 interface ProfilePanelProps {
   currentUser: User;
@@ -16,6 +17,7 @@ interface ProfilePanelProps {
   onLogout?: () => void;
   onGoToTab?: (tab: 'home' | 'history' | 'profile' | 'developer' | 'upload' | 'chats' | 'stores') => void;
   onSwitchAccount?: () => void;
+  onViewUserStorefront?: (userId: string) => void;
 }
 
 export const ProfilePanel: React.FC<ProfilePanelProps> = ({
@@ -27,6 +29,7 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({
   onLogout,
   onGoToTab,
   onSwitchAccount,
+  onViewUserStorefront,
 }) => {
   const [username, setUsername] = useState(currentUser.username);
   const [password, setPassword] = useState('');
@@ -34,6 +37,7 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({
   const [profilePic, setProfilePic] = useState<string | null>(currentUser.profilePic);
   
   const [toastText, setToastText] = useState<string | null>(null);
+  const [cropperSrc, setCropperSrc] = useState<string | null>(null);
 
   const isVideoUrl = (src?: string | null) => {
     return src?.startsWith('data:video/') || src?.match(/\.(mp4|webm|ogg|mov|mkv|3gp)(\?.*)?$/i);
@@ -51,7 +55,7 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
-          setProfilePic(event.target.result as string);
+          setCropperSrc(event.target.result as string);
         }
       };
       reader.readAsDataURL(file);
@@ -84,6 +88,20 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({
   return (
     <div className="flex flex-col lg:flex-row gap-6">
       
+      {/* Dynamic Photo Cropping Modal */}
+      {cropperSrc && (
+        <ImageCropperModal
+          imageSrc={cropperSrc}
+          aspectRatio={1}
+          title="Pangkas Foto Profil Toko"
+          onCropComplete={(croppedBase64) => {
+            setProfilePic(croppedBase64);
+            setCropperSrc(null);
+          }}
+          onClose={() => setCropperSrc(null)}
+        />
+      )}
+
       {/* Visual confirmation toast */}
       {toastText && (
         <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl bg-primary text-white text-xs font-bold shadow-xl animate-bounce">
@@ -199,7 +217,33 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({
               Simpan Perubahan Profil
             </button>
 
+            {currentUser.id !== 'u_guest' && onViewUserStorefront && (
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => onViewUserStorefront(currentUser.id)}
+                  className="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 py-2.5 rounded-xl font-extrabold text-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer shadow-lg"
+                >
+                  <UserIcon size={13} />
+                  Buka Etalase Jualan Saya
+                </button>
+              </div>
+            )}
+
           </form>
+        )}
+
+        {onGoToTab && (
+          <div className="pt-2 border-t border-zinc-805">
+            <button
+              type="button"
+              onClick={() => onGoToTab('stores')}
+              className="w-full bg-[#0084ff]/10 hover:bg-[#0084ff]/20 text-[#0084ff] border border-[#0084ff]/20 py-2.5 rounded-xl font-extrabold text-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-[#0084ff]/5"
+            >
+              <ShoppingBag size={13} />
+              MENU DAFTAR ETALASE TOKO
+            </button>
+          </div>
         )}
 
         {(currentUser.role === 'developer' || currentUser.role === 'admin') && onGoToTab && (

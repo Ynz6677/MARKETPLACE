@@ -8,75 +8,79 @@ interface PromoSliderProps {
 }
 
 export const PromoSlider: React.FC<PromoSliderProps> = ({ banners }) => {
-  const [isDesktop, setIsDesktop] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Monitor tablet or desktop width
-  useEffect(() => {
-    const handleResize = () => {
-      setIsDesktop(window.innerWidth >= 640);
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Show 1 on mobile, 2 on tablet & desktop
-  const visibleCount = isDesktop ? 2 : 1;
-  const isScrollable = banners.length > visibleCount;
+  const isScrollable = banners.length > 1;
 
   const nextSlide = useCallback(() => {
     if (!isScrollable) return;
-    const maxIndex = banners.length - visibleCount;
-    setCurrentIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
-  }, [banners.length, visibleCount, isScrollable]);
+    setCurrentIndex((prev) => (prev >= banners.length - 1 ? 0 : prev + 1));
+  }, [banners.length, isScrollable]);
 
   const prevSlide = useCallback(() => {
     if (!isScrollable) return;
-    const maxIndex = banners.length - visibleCount;
-    setCurrentIndex((prev) => (prev <= 0 ? maxIndex : prev - 1));
-  }, [banners.length, visibleCount, isScrollable]);
+    setCurrentIndex((prev) => (prev <= 0 ? banners.length - 1 : prev - 1));
+  }, [banners.length, isScrollable]);
 
-  // Autoplay banner transitions smoothly every 5.5 seconds
+  // Autoplay banner transitions smoothly every 6 seconds
   useEffect(() => {
     if (!isScrollable) return;
     const interval = setInterval(() => {
       nextSlide();
-    }, 5500);
+    }, 6000);
 
     return () => clearInterval(interval);
   }, [nextSlide, isScrollable]);
 
   if (!banners || banners.length === 0) return null;
 
-  const maxDotsCount = banners.length - visibleCount + 1;
+  // Swipe gesture via framer-motion drag end
+  const handleDragEnd = (event: any, info: any) => {
+    const swipeThreshold = 50; // swipe 50px to trigger slide transition
+    if (info.offset.x < -swipeThreshold) {
+      nextSlide();
+    } else if (info.offset.x > swipeThreshold) {
+      prevSlide();
+    }
+  };
 
   return (
-    <div className="relative w-full select-none group/slider">
+    <div className="relative w-full max-w-full mx-auto select-none group/slider">
       {/* Slider viewport container */}
-      <div className="w-full overflow-hidden rounded-2xl">
+      <div className="w-full overflow-hidden rounded-2xl aspect-[16/9] relative bg-zinc-950 border border-zinc-850">
         <motion.div
-          className="flex gap-4 w-full"
-          animate={{
-            x: `calc(-${currentIndex * (isDesktop ? 50 : 100)}% - ${currentIndex * (isDesktop ? 8 : 0)}px)`
-          }}
+          className="flex w-full h-full cursor-grab active:cursor-grabbing"
+          drag="x"
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.25}
+          onDragEnd={handleDragEnd}
+          animate={{ x: `-${currentIndex * 100}%` }}
+          style={{ touchAction: 'pan-y' }}
           transition={{
             type: 'spring',
-            stiffness: 80,
-            damping: 16,
-            mass: 0.9,
+            stiffness: 280,
+            damping: 26,
+            mass: 0.8,
           }}
         >
           {banners.map((banner) => (
             <div
               key={banner.id}
-              className="relative w-full sm:w-[calc(50%-8px)] shrink-0 overflow-hidden rounded-2xl border border-zinc-850 hover:border-[#0084ff]/35 shadow-2xl flex flex-col justify-between p-4 sm:p-5 h-[110px] sm:h-[155px] transition-all duration-300 bg-contain bg-no-repeat bg-center"
+              className="relative w-full h-full shrink-0 overflow-hidden flex flex-col justify-end p-4 sm:p-6 transition-all duration-300"
               style={{
                 backgroundColor: banner.bgColor || '#001b3a',
-                backgroundImage: banner.imageUrl ? `url(${banner.imageUrl})` : 'none',
               }}
             >
-              {/* Styled ambient background highlighting */}
+              {banner.imageUrl ? (
+                <img
+                  src={banner.imageUrl}
+                  className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+                  alt=""
+                  referrerPolicy="no-referrer"
+                />
+              ) : null}
+
+              {/* Styled ambient background highlighting if no banner image is provided */}
               {!banner.imageUrl && (
                 <div
                   className="absolute inset-0 opacity-80"
@@ -86,27 +90,28 @@ export const PromoSlider: React.FC<PromoSliderProps> = ({ banners }) => {
                 />
               )}
 
-              {banner.imageUrl && (
-                <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
-              )}
-
-              {/* Empty upper layout tag */}
-              <div className="z-10" />
+              {/* Ambient dark gradient overlay to ensure high-contrast text readability */}
+              <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
 
               {/* Headings and CTA Button details */}
-              <div className="z-10 max-w-md mt-auto space-y-1 select-none text-left">
-                {/* White text Title as requested by user */}
-                <h2 className="keep-text-white text-xs sm:text-sm font-black text-white leading-tight uppercase tracking-tight font-sans drop-shadow-[0_1.5px_2.5px_rgba(0,0,0,0.9)] truncate">
+              <div className="z-10 max-w-md space-y-1 sm:space-y-2 select-none text-left">
+                <h2
+                  className="keep-text-white text-xs sm:text-base md:text-lg font-black leading-tight uppercase tracking-tight font-sans drop-shadow-[0_2px_3px_rgba(0,0,0,0.95)] truncate"
+                  style={{ color: banner.titleColor || '#ffffff' }}
+                >
                   {banner.title || 'DISKON SAMPAI 70%'}
                 </h2>
-                <p className="keep-text-zinc text-[8px] sm:text-[9px] text-zinc-300 uppercase font-black tracking-wider leading-none drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.9)] truncate">
+                <p
+                  className="keep-text-zinc text-[9px] sm:text-xs uppercase font-black tracking-wider leading-none drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.95)] truncate"
+                  style={{ color: banner.subtitleColor || '#d4d4d8' }}
+                >
                   {banner.subtitle || 'Promo Spesial Minggu Ini'}
                 </p>
 
                 <div className="pt-1.5 select-none pointer-events-auto">
                   <a
                     href={banner.buttonLink || '#'}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#0084ff] hover:bg-[#0066ff] text-white rounded-full text-[8px] font-extrabold uppercase tracking-wider transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-blue-600/30 cursor-pointer"
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-[#0084ff] hover:bg-[#0066ff] text-white rounded-full text-[8px] sm:text-[10px] font-extrabold uppercase tracking-wider transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-blue-600/30 cursor-pointer"
                   >
                     <span>{banner.buttonText || 'Buka'}</span>
                     <span>&rarr;</span>
@@ -139,9 +144,9 @@ export const PromoSlider: React.FC<PromoSliderProps> = ({ banners }) => {
       )}
 
       {/* Compact Sliding Dot Indicators */}
-      {isScrollable && maxDotsCount > 1 && (
-        <div className="flex justify-center gap-1.5 items-center mt-3.5 w-full">
-          {Array.from({ length: maxDotsCount }).map((_, idx) => (
+      {isScrollable && (
+        <div className="flex justify-center gap-1.5 items-center mt-3 w-full">
+          {banners.map((_, idx) => (
             <button
               key={idx}
               onClick={() => setCurrentIndex(idx)}

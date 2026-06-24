@@ -56,7 +56,7 @@ export const SVGLogo: React.FC<SVGLogoProps> = ({ className = '', size = 160, va
 
   return (
     <div 
-      className={`relative select-none overflow-hidden rounded-xl border border-zinc-805 shadow-xl bg-zinc-950/80 shrink-0 flex items-center justify-center ${className}`}
+      className={`relative select-none overflow-hidden rounded-none shrink-0 flex items-center justify-center ${className}`}
       style={{ width: widthVal, height: heightVal }}
     >
       {isVideo(logoUrl) ? (

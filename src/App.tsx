@@ -37,8 +37,9 @@ import {
   saveMultipleChats,
   syncBanner,
   saveBanner,
-  clearAllExceptUsers
-} from './firebase';
+  clearAllExceptUsers,
+  syncLogo
+} from './db';
 import { Sparkles, ShoppingBag, ShieldAlert, BadgeCheck, MessageSquare, Plus, CheckCircle, XCircle, AlertCircle, Search, Users, SlidersHorizontal, Heart, Mail, Headphones, Home, History, PlusCircle, LogOut, LogIn, Shield, User as UserIcon } from 'lucide-react';
 
 export default function App() {
@@ -46,7 +47,25 @@ export default function App() {
   const [isSplashLoading, setIsSplashLoading] = useState(true);
   const [splashProgress, setSplashProgress] = useState(0);
 
-  const playIntroSound = () => {
+  const [brandingColors, setBrandingColors] = useState({
+    titleColor: localStorage.getItem('wast_custom_title_color') || '',
+    textColor: localStorage.getItem('wast_custom_text_color') || '',
+    themeColor: localStorage.getItem('wast_custom_theme_color') || ''
+  });
+
+  useEffect(() => {
+    const handleColorChange = () => {
+      setBrandingColors({
+        titleColor: localStorage.getItem('wast_custom_title_color') || '',
+        textColor: localStorage.getItem('wast_custom_text_color') || '',
+        themeColor: localStorage.getItem('wast_custom_theme_color') || ''
+      });
+    };
+    window.addEventListener('wast_branding_colors_changed', handleColorChange);
+    return () => window.removeEventListener('wast_branding_colors_changed', handleColorChange);
+  }, []);
+
+  const playSynthIntro = () => {
     try {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioContextClass) return;
@@ -76,6 +95,19 @@ export default function App() {
       playTone(987.77, now + 0.60, 1.45, 'sine', 0.06); // B5 digital sparkles
     } catch (e) {
       console.warn("Audio context restricted by browser:", e);
+    }
+  };
+
+  const playIntroSound = () => {
+    try {
+      const audio = new Audio('/WELCOME.mp3');
+      audio.play().catch(e => {
+        console.warn("Failed to play WELCOME.mp3, falling back to synth", e);
+        playSynthIntro();
+      });
+    } catch (e) {
+      console.warn("Audio element failed to initialize:", e);
+      playSynthIntro();
     }
   };
 
@@ -139,7 +171,7 @@ export default function App() {
     }
   };
 
-  const playCashSound = () => {
+  const playSynthCash = () => {
     try {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioContextClass) return;
@@ -182,7 +214,20 @@ export default function App() {
       osc3.start(now + 0.15);
       osc3.stop(now + 0.5);
     } catch (error) {
-      console.warn('Audio Context failed inside playCashSound:', error);
+      console.warn('Audio Context failed inside playSynthCash:', error);
+    }
+  };
+
+  const playCashSound = () => {
+    try {
+      const audio = new Audio('/CASH.mp3');
+      audio.play().catch(e => {
+        console.warn("Failed to play CASH.mp3, falling back to synth", e);
+        playSynthCash();
+      });
+    } catch (e) {
+      console.warn("Audio element failed to initialize:", e);
+      playSynthCash();
     }
   };
 
@@ -487,6 +532,10 @@ export default function App() {
       setBanner(fetchedBanner);
     });
 
+    const unsubLogo = syncLogo(() => {
+      // Real-time local storage sync & event dispatch is already managed inside syncLogo.
+    });
+
     // Dismiss splash screen loader progressively
     let progressVal = 0;
     const progressInterval = setInterval(() => {
@@ -504,6 +553,7 @@ export default function App() {
       unsubTransactions();
       unsubChats();
       unsubBanner();
+      unsubLogo();
       clearInterval(progressInterval);
     };
   }, []);
@@ -1265,6 +1315,39 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#0d0d10] text-[#f4f4f6] flex flex-col">
+      {/* Dynamic injection of customized colors */}
+      <style>{`
+        :root {
+          ${brandingColors.themeColor ? `--color-primary: ${brandingColors.themeColor} !important; --color-primary-hover: ${brandingColors.themeColor}dd !important;` : ''}
+        }
+        ${brandingColors.themeColor ? `
+          .bg-primary, .bg-\\[\\#0084ff\\], .bg-gradient-to-r.from-\\[\\#0084ff\\] {
+            background-color: ${brandingColors.themeColor} !important;
+          }
+          .text-primary, .text-\\[\\#0084ff\\], .text-emerald-400 {
+            color: ${brandingColors.themeColor} !important;
+          }
+          .border-primary, .border-\\[\\#0084ff\\], .border-emerald-500\\/20 {
+            border-color: ${brandingColors.themeColor}80 !important;
+          }
+          .border-\\[\\#39a0ff\\] {
+            border-color: ${brandingColors.themeColor}cc !important;
+          }
+          .shadow-primary\\/5 {
+            --tw-shadow-color: ${brandingColors.themeColor}20 !important;
+          }
+        ` : ''}
+        ${brandingColors.titleColor ? `
+          .brand-title, h1, h2:not(.exclude-branding), h3:not(.exclude-branding) {
+            color: ${brandingColors.titleColor} !important;
+          }
+        ` : ''}
+        ${brandingColors.textColor ? `
+          .brand-text, .text-zinc-400, .text-zinc-500 {
+            color: ${brandingColors.textColor} !important;
+          }
+        ` : ''}
+      `}</style>
       
       {/* GLOBAL TOAST POPUP NOTIFICATION */}
       {activeNotification && (
@@ -1919,6 +2002,7 @@ export default function App() {
                   setOverrideDevChatId(null);
                 }}
                 onSwitchAccount={() => setForceAuthScreen(true)}
+                onViewUserStorefront={(userId) => setSelectedStorefrontUserId(userId)}
               />
             )}
 

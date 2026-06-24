@@ -34,6 +34,9 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
   const handleDownloadReceipt = (tx: Transaction) => {
     const buyerUser = users.find((u) => u.id === tx.buyerId);
     const buyerName = buyerUser?.username || 'User WAST';
+
+    const sellerUser = users.find((u) => u.id === tx.sellerId);
+    const sellerName = sellerUser?.username || 'Penjual WAST';
     
     const productItem = products.find((p) => p.id === tx.productId);
     const categoryName = productItem?.category || 'Robux';
@@ -54,7 +57,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
     };
 
     let statusText = 'KONFIRMASI';
-    if (tx.status === 'completed') statusText = 'SUKSES / SELESAI';
+    if (tx.status === 'completed') statusText = 'SUKSES';
     if (tx.status === 'cancelled') statusText = 'DIBATALKAN';
 
     const isBuyer = tx.buyerId === currentUser.id;
@@ -63,6 +66,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
     const dateObj = new Date(tx.timestamp);
     const formattedTime = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()} ${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
 
+    const formattedPrice = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(tx.price);
     const totalTagihan = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(tx.price * tx.qty);
 
     const lines: string[] = [
@@ -74,10 +78,12 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
       formatRow('ID Transaksi', tx.id.substring(0, 18).toUpperCase()),
       formatRow('Waktu', formattedTime),
       '----------------------------------------',
+      formatRow('Penjual', sellerName),
       formatRow('Pelanggan', buyerName),
       formatRow('Produk', tx.productName),
-      formatRow('Jumlah', `${tx.qty}x`),
       '----------------------------------------',
+      formatRow('Harga', formattedPrice),
+      formatRow('Jumlah', `${tx.qty}x`),
       formatRow('TOTAL TAGIHAN', totalTagihan),
       '----------------------------------------',
       formatRow('Kategori', categoryName),
@@ -94,62 +100,87 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
     const totalLinesHeight = lines.length * lineHeight;
     
     canvas.width = 500; // Much lighter width! Perfect fit for 40 monospaced characters
-    canvas.height = 80 + totalLinesHeight + 110; // Dynamic height based precisely on content + barcode!
+    const logoAreaHeight = 130;
+    canvas.height = logoAreaHeight + totalLinesHeight + 110; // Dynamic height based precisely on content + barcode!
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Vintage thermal slate paper background
-    ctx.fillStyle = '#fafaf5';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Load custom logo
+    const logoImg = new Image();
+    logoImg.crossOrigin = 'anonymous';
+    const customLogoUrl = localStorage.getItem('wast_custom_logo') || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=350&q=80';
+    logoImg.src = customLogoUrl;
 
-    // Subtle paper edge border look
-    ctx.strokeStyle = '#e6e6dd';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+    const renderAndDownload = () => {
+      // Vintage thermal slate paper background
+      ctx.fillStyle = '#fafaf5';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Monospaced layout render
-    ctx.fillStyle = '#1a1a1f';
-    ctx.font = `bold ${fontSize}px "Courier New", Courier, monospace`;
-    ctx.textAlign = 'left';
+      // Subtle paper edge border look
+      ctx.strokeStyle = '#e6e6dd';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
 
-    const startY = 50;
+      // Draw Logo Image
+      try {
+        const logoW = 140;
+        const logoH = 78; // 16:9 ratio
+        const logoX = (canvas.width - logoW) / 2;
+        const logoY = 25;
+        ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
+      } catch (e) {
+        console.warn("Could not draw logo image on receipt:", e);
+      }
 
-    lines.forEach((line, index) => {
-      ctx.fillText(line, startX, startY + (index * lineHeight));
-    });
+      // Monospaced layout render
+      ctx.fillStyle = '#1a1a1f';
+      ctx.font = `bold ${fontSize}px "Courier New", Courier, monospace`;
+      ctx.textAlign = 'left';
 
-    // Barcode design matching the narrow format
-    const barcodeY = startY + totalLinesHeight + 15;
-    ctx.fillStyle = '#22222b';
-    
-    const barcodeWidth = canvas.width - (startX * 2);
-    const barcodeLineWidths = [2, 4, 1, 3, 5, 2, 6, 2, 1, 4, 3, 2, 1];
-    
-    // Draw compact custom barcode
-    let barcodeXCursor = startX;
-    let iIndex = 0;
-    while (barcodeXCursor < canvas.width - startX) {
-      const segmentW = barcodeLineWidths[iIndex % barcodeLineWidths.length];
-      ctx.fillRect(barcodeXCursor, barcodeY, segmentW, 35);
-      barcodeXCursor += segmentW + 3; // add offset spacing
-      iIndex++;
-    }
+      const startY = logoAreaHeight + 20;
 
-    // Centered barcode subtitle metadata
-    ctx.font = '11px "Courier New", Courier, monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(`*WAST-${tx.id.substring(0, 8).toUpperCase()}-${tipeText}*`, canvas.width / 2, barcodeY + 52);
+      lines.forEach((line, index) => {
+        ctx.fillText(line, startX, startY + (index * lineHeight));
+      });
 
-    try {
-      const dataUrl = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.download = `nota_WAST_${tipeText}_${tx.id.substring(0, 8)}.png`;
-      link.href = dataUrl;
-      link.click();
-    } catch (err) {
-      console.error('Failed downloading receipt image:', err);
-    }
+      // Barcode design matching the narrow format
+      const barcodeY = startY + totalLinesHeight + 15;
+      ctx.fillStyle = '#22222b';
+      
+      const barcodeLineWidths = [2, 4, 1, 3, 5, 2, 6, 2, 1, 4, 3, 2, 1];
+      
+      // Draw compact custom barcode
+      let barcodeXCursor = startX;
+      let iIndex = 0;
+      while (barcodeXCursor < canvas.width - startX) {
+        const segmentW = barcodeLineWidths[iIndex % barcodeLineWidths.length];
+        ctx.fillRect(barcodeXCursor, barcodeY, segmentW, 35);
+        barcodeXCursor += segmentW + 3; // add offset spacing
+        iIndex++;
+      }
+
+      // Centered barcode subtitle metadata
+      ctx.font = '11px "Courier New", Courier, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`*WAST-${tx.id.substring(0, 8).toUpperCase()}-${tipeText}*`, canvas.width / 2, barcodeY + 52);
+
+      try {
+        const dataUrl = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = `nota_WAST_${tipeText}_${tx.id.substring(0, 8)}.png`;
+        link.href = dataUrl;
+        link.click();
+      } catch (err) {
+        console.error('Failed downloading receipt image:', err);
+      }
+    };
+
+    logoImg.onload = renderAndDownload;
+    logoImg.onerror = () => {
+      console.warn("Logo failed to load, printing text-only receipt");
+      renderAndDownload();
+    };
   };
 
   const getPartnerName = (tx: Transaction) => {

@@ -7,6 +7,8 @@ import React, { useState } from 'react';
 import { User, Product, Transaction, ChatMessage, BannerConfig } from '../types';
 import { Shield, Eye, Trash2, CheckCircle2, UserCheck, Tag, ShoppingCart, RefreshCw, MessageSquare, AlertCircle, Image as ImageIcon, Coins } from 'lucide-react';
 import { SVGLogo } from './SVGLogo';
+import { ImageCropperModal } from './ImageCropperModal';
+import { saveLogoInDatabase, saveBrandingInDatabase } from '../db';
 
 interface DeveloperPanelProps {
   currentUser: User;
@@ -49,6 +51,9 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
   const [userBadgeInputs, setUserBadgeInputs] = useState<{ [userId: string]: string }>({});
   const [userBalanceInputs, setUserBalanceInputs] = useState<{ [userId: string]: string }>({});
   const [searchUserQuery, setSearchUserQuery] = useState('');
+  
+  const [bannerCropperSrc, setBannerCropperSrc] = useState<string | null>(null);
+  const [logoCropperSrc, setLogoCropperSrc] = useState<string | null>(null);
 
   // Local state for editing multiple banners
   const [localBanners, setLocalBanners] = useState<BannerConfig[]>(banner || []);
@@ -86,7 +91,7 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
-          updateActiveBannerField('imageUrl', event.target.result as string);
+          setBannerCropperSrc(event.target.result as string);
         }
       };
       reader.readAsDataURL(file);
@@ -992,6 +997,52 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
                         />
                       </div>
                     </div>
+
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-zinc-500 mb-1">Warna Judul Banner (Title)</label>
+                      <div className="flex gap-2 items-center bg-zinc-900 border border-zinc-850 rounded-2xl px-2.5 py-1.5 focus-within:border-primary transition-all">
+                        <div className="relative w-8 h-8 rounded-full overflow-hidden border border-zinc-700 cursor-pointer shadow-md flex items-center justify-center shrink-0 bg-gradient-to-tr from-red-500 via-yellow-400 via-green-500 via-blue-500 to-purple-500">
+                          <input
+                            type="color"
+                            value={activeSelectedBanner.titleColor || '#ffffff'}
+                            onChange={(e) => updateActiveBannerField('titleColor', e.target.value)}
+                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                            title="Atur Warna Judul"
+                          />
+                          <div className="w-4 h-4 rounded-full border border-white shadow-sm" style={{ backgroundColor: activeSelectedBanner.titleColor || '#ffffff' }} />
+                        </div>
+                        <input
+                          type="text"
+                          value={activeSelectedBanner.titleColor || '#ffffff'}
+                          onChange={(e) => updateActiveBannerField('titleColor', e.target.value)}
+                          className="w-full bg-transparent text-xs text-zinc-200 outline-none font-mono uppercase"
+                          placeholder="#FFFFFF"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-zinc-500 mb-1">Warna Deskripsi Banner (Subtitle)</label>
+                      <div className="flex gap-2 items-center bg-zinc-900 border border-zinc-850 rounded-2xl px-2.5 py-1.5 focus-within:border-primary transition-all">
+                        <div className="relative w-8 h-8 rounded-full overflow-hidden border border-zinc-700 cursor-pointer shadow-md flex items-center justify-center shrink-0 bg-gradient-to-tr from-red-500 via-yellow-400 via-green-500 via-blue-500 to-purple-500">
+                          <input
+                            type="color"
+                            value={activeSelectedBanner.subtitleColor || '#d4d4d8'}
+                            onChange={(e) => updateActiveBannerField('subtitleColor', e.target.value)}
+                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                            title="Atur Warna Deskripsi"
+                          />
+                          <div className="w-4 h-4 rounded-full border border-white shadow-sm" style={{ backgroundColor: activeSelectedBanner.subtitleColor || '#d4d4d8' }} />
+                        </div>
+                        <input
+                          type="text"
+                          value={activeSelectedBanner.subtitleColor || '#d4d4d8'}
+                          onChange={(e) => updateActiveBannerField('subtitleColor', e.target.value)}
+                          className="w-full bg-transparent text-xs text-zinc-200 outline-none font-mono uppercase"
+                          placeholder="#D4D4D8"
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   <button
@@ -1027,10 +1078,16 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
                     )}
                     
                     <div className="z-10 mt-auto">
-                      <h1 className="text-xs sm:text-sm font-black text-white leading-tight uppercase tracking-tight select-none">
+                      <h1 
+                        className="text-xs sm:text-sm font-black leading-tight uppercase tracking-tight select-none font-sans"
+                        style={{ color: activeSelectedBanner.titleColor || '#ffffff' }}
+                      >
                         {activeSelectedBanner.title || 'POPOLNI CRYPTO'}
                       </h1>
-                      <p className="text-[8px] sm:text-[9px] text-zinc-200 mt-1 uppercase font-semibold tracking-wide select-none leading-tight">
+                      <p 
+                        className="text-[8px] sm:text-[9px] mt-1 uppercase font-semibold tracking-wide select-none leading-tight"
+                        style={{ color: activeSelectedBanner.subtitleColor || '#e4e4e7' }}
+                      >
                         {activeSelectedBanner.subtitle || 'Beli Saldo Crypto & Diamond Instan, Bonus up to 10%!'}
                       </p>
                     </div>
@@ -1094,7 +1151,7 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
                 <div className="relative group cursor-pointer border border-dashed border-zinc-805 hover:border-[#0084ff]/50 bg-zinc-950/70 p-5 rounded-xl text-center transition-all">
                   <input
                     type="file"
-                    accept="image/*,video/*"
+                    accept="image/*"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {
@@ -1107,9 +1164,7 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
                         const reader = new FileReader();
                         reader.onload = (event) => {
                           if (event.target?.result) {
-                            const val = event.target.result as string;
-                            localStorage.setItem('wast_custom_logo', val);
-                            window.dispatchEvent(new Event('wast_logo_changed'));
+                            setLogoCropperSrc(event.target.result as string);
                           }
                         };
                         reader.readAsDataURL(file);
@@ -1121,8 +1176,8 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
                     <div className="p-2 bg-[#0084ff]/10 text-primary rounded-lg">
                       <ImageIcon size={20} />
                     </div>
-                    <span className="text-[11px] text-zinc-300 font-black">Klik atau Seret Berkas Disini</span>
-                    <span className="text-[9px] text-zinc-500 font-bold">Mendukung Foto, GIF Animasi, atau Video pendek (.MP4) (Maks 100MB)</span>
+                    <span className="text-[11px] text-zinc-300 font-black">Klik atau Seret Foto Logo Disini</span>
+                    <span className="text-[9px] text-zinc-500 font-bold">Foto akan dipangkas ke Rasio 16:9 secara proporsional</span>
                   </div>
                 </div>
               </div>
@@ -1144,8 +1199,7 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
                   onChange={(e) => {
                     const val = e.target.value.trim();
                     if (val) {
-                      localStorage.setItem('wast_custom_logo', val);
-                      window.dispatchEvent(new Event('wast_logo_changed'));
+                      saveLogoInDatabase(val);
                     }
                   }}
                   defaultValue={localStorage.getItem('wast_custom_logo') || ''}
@@ -1156,14 +1210,75 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    localStorage.removeItem('wast_custom_logo');
-                    window.dispatchEvent(new Event('wast_logo_changed'));
+                    saveLogoInDatabase(null);
                   }}
                   className="w-full py-2 bg-zinc-950 hover:bg-zinc-850 text-zinc-400 hover:text-white text-[10.5px] font-black uppercase rounded-xl border border-zinc-850 cursor-pointer transition-all active:scale-95 text-center flex items-center justify-center gap-1.5"
                 >
                   Reset Logo ke Bawaan
                 </button>
               </div>
+
+              <div className="border-t border-zinc-850 pt-4 space-y-4">
+                <h4 className="text-[11px] font-black uppercase text-zinc-400 tracking-wider flex items-center gap-1.5">
+                  🎨 KUSTOMISASI JUDUL & WARNA PLATFORM
+                </h4>
+                
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-zinc-500 mb-1">Nama / Judul Platform Utama</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: WAST INDONESIA"
+                    className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none focus:border-primary font-semibold"
+                    onChange={(e) => saveBrandingInDatabase({ title: e.target.value.trim() })}
+                    defaultValue={localStorage.getItem('wast_custom_title') || 'WAST'}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-zinc-500 mb-1">Warna Judul Utama</label>
+                    <div className="flex gap-2 items-center bg-zinc-950 border border-zinc-850 rounded-xl px-2 py-1.5">
+                      <input
+                        type="color"
+                        defaultValue={localStorage.getItem('wast_custom_title_color') || '#ffffff'}
+                        onChange={(e) => saveBrandingInDatabase({ titleColor: e.target.value })}
+                        className="w-6 h-6 rounded-md bg-transparent border-0 cursor-pointer"
+                        title="Pilih Warna Judul"
+                      />
+                      <span className="text-[10px] font-mono font-semibold text-zinc-300">JUDUL</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-zinc-500 mb-1">Warna Deskripsi / Teks</label>
+                    <div className="flex gap-2 items-center bg-zinc-950 border border-zinc-850 rounded-xl px-2 py-1.5">
+                      <input
+                        type="color"
+                        defaultValue={localStorage.getItem('wast_custom_text_color') || '#a1a1aa'}
+                        onChange={(e) => saveBrandingInDatabase({ textColor: e.target.value })}
+                        className="w-6 h-6 rounded-md bg-transparent border-0 cursor-pointer"
+                        title="Pilih Warna Teks"
+                      />
+                      <span className="text-[10px] font-mono font-semibold text-zinc-300">TEKS</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-zinc-500 mb-1">Warna Tema / Aksen Brand (Primary)</label>
+                  <div className="flex gap-2.5 items-center bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2">
+                    <input
+                      type="color"
+                      defaultValue={localStorage.getItem('wast_custom_theme_color') || '#0084ff'}
+                      onChange={(e) => saveBrandingInDatabase({ themeColor: e.target.value })}
+                      className="w-8 h-8 rounded-full bg-transparent border-0 cursor-pointer"
+                      title="Pilih Warna Tema Utama"
+                    />
+                    <span className="text-xs font-mono font-black text-zinc-300">WARNA UTAMA</span>
+                  </div>
+                </div>
+              </div>
+
             </div>
 
             {/* Right Column: Preview Panel */}
@@ -1186,6 +1301,33 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Image Crop modulators for Banner & Logo uploads */}
+      {bannerCropperSrc && (
+        <ImageCropperModal
+          imageSrc={bannerCropperSrc}
+          aspectRatio={16/9}
+          title="Pangkas Foto Banner Promo"
+          onCropComplete={(croppedBase64) => {
+            updateActiveBannerField('imageUrl', croppedBase64);
+            setBannerCropperSrc(null);
+          }}
+          onClose={() => setBannerCropperSrc(null)}
+        />
+      )}
+
+      {logoCropperSrc && (
+        <ImageCropperModal
+          imageSrc={logoCropperSrc}
+          aspectRatio={16/9}
+          title="Pangkas Logo Platform Utama"
+          onCropComplete={(croppedBase64) => {
+            saveLogoInDatabase(croppedBase64);
+            setLogoCropperSrc(null);
+          }}
+          onClose={() => setLogoCropperSrc(null)}
+        />
       )}
 
     </div>

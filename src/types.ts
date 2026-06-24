@@ -70,4 +70,6 @@ export interface BannerConfig {
   buttonLink: string;
   bgColor: string;
   accentColor: string;
+  titleColor?: string;
+  subtitleColor?: string;
 }
