@@ -111,7 +111,8 @@ export const PromoSlider: React.FC<PromoSliderProps> = ({ banners }) => {
                 <div className="pt-1.5 select-none pointer-events-auto">
                   <a
                     href={banner.buttonLink || '#'}
-                    className="inline-flex items-center gap-1 px-3 py-1 bg-[#0084ff] hover:bg-[#0066ff] text-white rounded-full text-[8px] sm:text-[10px] font-extrabold uppercase tracking-wider transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-blue-600/30 cursor-pointer"
+                    className="inline-flex items-center gap-1 px-3 py-1 text-white rounded-full text-[8px] sm:text-[10px] font-extrabold uppercase tracking-wider transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-black/30 cursor-pointer"
+                    style={{ backgroundColor: banner.accentColor || '#0084ff' }}
                   >
                     <span>{banner.buttonText || 'Buka'}</span>
                     <span>&rarr;</span>

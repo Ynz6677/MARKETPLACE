@@ -51,13 +51,13 @@ export const SVGLogo: React.FC<SVGLogoProps> = ({ className = '', size = 160, va
   };
 
   const logoUrl = customLogoUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=350&q=80';
-  const widthVal = width || size;
-  const heightVal = height || Math.round(size * 9 / 16);
+  const widthVal = width === 'auto' ? undefined : (width || size);
+  const heightVal = height === 'auto' ? undefined : (height || 'auto');
 
   return (
     <div 
-      className={`relative select-none overflow-hidden rounded-none shrink-0 flex items-center justify-center ${className}`}
-      style={{ width: widthVal, height: heightVal }}
+      className={`relative select-none shrink-0 flex items-center justify-center ${className}`}
+      style={{ width: widthVal, height: heightVal === '100%' ? '100%' : heightVal }}
     >
       {isVideo(logoUrl) ? (
         <video 
@@ -66,13 +66,13 @@ export const SVGLogo: React.FC<SVGLogoProps> = ({ className = '', size = 160, va
           loop 
           muted 
           playsInline 
-          className="w-full h-full object-contain"
+          className="max-w-full max-h-full object-contain"
         />
       ) : (
         <img 
           src={logoUrl} 
           alt="Branded Logo" 
-          className="w-full h-full object-contain"
+          className="max-w-full max-h-full object-contain"
           referrerPolicy="no-referrer"
           onError={(e) => {
             (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=350&q=80';

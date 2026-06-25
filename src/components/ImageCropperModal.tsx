@@ -92,9 +92,8 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      // Black background fallback
-      ctx.fillStyle = '#121214';
-      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      // Ensure transparent background instead of a dark fill
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
       const imageAspect = img.width / img.height;
       let baseWidth = canvasWidth;
@@ -118,7 +117,7 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
       ctx.drawImage(img, drawX, drawY, finalWidth, finalHeight);
 
       try {
-        const croppedBase64 = canvas.toDataURL('image/jpeg', 0.92);
+        const croppedBase64 = canvas.toDataURL('image/png');
         onCropComplete(croppedBase64);
       } catch (err) {
         console.error('Failed to crop image on canvas:', err);

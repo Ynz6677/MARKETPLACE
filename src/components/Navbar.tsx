@@ -83,8 +83,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="w-full flex items-center justify-between px-4 py-2.5 sm:px-6 relative">
           
           {/* Logo on Left - WAST Logo */}
-          <div className="flex items-center cursor-pointer select-none" onClick={() => onGoToTab('home')}>
-            <SVGLogo width={96} height={34} variant="bear" />
+          <div className="flex items-center cursor-pointer select-none h-8 sm:h-9" onClick={() => onGoToTab('home')}>
+            <SVGLogo className="h-full w-auto" width="auto" height="100%" variant="bear" />
           </div>
 
           {/* Clean Action Capsule Buttons on Right */}
