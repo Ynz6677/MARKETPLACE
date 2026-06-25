@@ -126,3 +126,13 @@ CREATE POLICY "Allow public write access on branding" ON public.branding FOR ALL
 INSERT INTO public.branding (key, title, "titleColor", "textColor", "themeColor")
 VALUES ('branding', 'WAST', '#ffffff', '#a1a1aa', '#0084ff')
 ON CONFLICT (key) DO NOTHING;
+
+-- 7. ENABLE REALTIME FOR ALL TABLES
+-- This is critical for the app to sync live!
+DO $$ 
+BEGIN 
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    CREATE PUBLICATION supabase_realtime;
+  END IF;
+END $$;
+ALTER PUBLICATION supabase_realtime ADD TABLE users, products, transactions, chats, banner, branding;
