@@ -66,13 +66,13 @@ export const SVGLogo: React.FC<SVGLogoProps> = ({ className = '', size = 160, va
           loop 
           muted 
           playsInline 
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain"
         />
       ) : (
         <img 
           src={logoUrl} 
           alt="Branded Logo" 
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain"
           referrerPolicy="no-referrer"
           onError={(e) => {
             (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=350&q=80';
