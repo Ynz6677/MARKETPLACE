@@ -1,0 +1,16 @@
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "User profile",
+      "type": "object",
+      "properties": {}
+    }
+  },
+  "firestore": {
+    "users": {
+      "schema": "user",
+      "description": "Users collection"
+    }
+  }
+}

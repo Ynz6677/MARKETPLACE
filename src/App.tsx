@@ -40,7 +40,7 @@ import {
   resetAllDataExceptOwner,
   syncLogo
 } from './db';
-import { Sparkles, ShoppingBag, ShieldAlert, BadgeCheck, MessageSquare, Plus, CheckCircle, XCircle, AlertCircle, Search, Users, SlidersHorizontal, Heart, Mail, Headphones, Home, History, PlusCircle, LogOut, LogIn, Shield, User as UserIcon } from 'lucide-react';
+import { Sparkles, ShoppingBag, ShieldAlert, BadgeCheck, MessageSquare, Plus, CheckCircle, XCircle, AlertCircle, Search, Users, SlidersHorizontal, Heart, Mail, Headphones, Home, History, PlusCircle, LogOut, LogIn, Shield, User as UserIcon, Menu } from 'lucide-react';
 
 export default function App() {
   // Splash Screen Screen Loader
@@ -1300,7 +1300,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0d0d10] text-[#f4f4f6] flex flex-col">
+    <div className="min-h-screen bg-[#080d19] text-[#f4f4f6] flex flex-col font-sans">
       {/* Dynamic injection of customized colors */}
       <style>{`
         :root {
@@ -1350,7 +1350,7 @@ export default function App() {
 
       {/* HEADER NAVBAR REPLICATING BAZARA BOT TOP BAR */}
       {currentUser && !forceAuthScreen && (
-        <div className="fixed top-0 left-0 right-0 z-40 w-full shadow-xl bg-gradient-to-r from-[#00142d] via-[#0051ba] to-[#00142d]">
+        <div className="fixed top-0 left-0 right-0 z-40 w-full bg-[#080d19]">
           <Navbar
             currentUser={currentUser}
             notificationCount={unreadMessagesCount}
@@ -1408,10 +1408,7 @@ export default function App() {
           
           {/* DESKTOP SIDEBAR: COMPACT, SLIGHTLY THINNER (w-48), FLUSH TO THE TOP NAV BAR */}
           <aside 
-            className="hidden md:flex flex-col w-48 shrink-0 fixed top-[55px] bottom-0 border-r border-[#0084ff]/20 p-3 text-white z-30 select-none overflow-y-auto"
-            style={{
-              background: 'linear-gradient(to bottom, #001026 0%, #001f42 50%, #0d0d10 100%)'
-            }}
+            className="hidden md:flex flex-col w-56 shrink-0 fixed top-[60px] bottom-0 bg-[#111928] border-r border-zinc-800/80 p-3 text-white z-30 select-none overflow-y-auto"
           >
             {/* COMPACT STYLIZED PROFILE HEADER */}
             <div 
@@ -1443,7 +1440,7 @@ export default function App() {
                 )}
               </div>
               <div className="text-center w-full min-w-0 px-1 flex flex-col items-center">
-                <h3 className="text-[12px] font-black tracking-tight truncate text-white leading-normal transition-colors">
+                <h3 className="text-[12px] font-black tracking-tight truncate text-zinc-100 leading-normal group-hover:text-[#0084ff] transition-colors">
                   {currentUser.username}
                 </h3>
                 {/* Yellow role/title with elegant side bars/border as requested */}
@@ -1620,52 +1617,47 @@ export default function App() {
           </aside>
 
           {/* MAIN PAGE WORKSPACE CLIENT VIEWPORT */}
-          <main className="flex-grow p-4 sm:p-6 lg:p-8 space-y-6 min-w-0 pb-44 overflow-y-auto md:ml-48">
+          <main className="flex-grow p-4 sm:p-6 lg:p-8 space-y-6 min-w-0 pb-44 overflow-y-auto md:ml-56">
             
             {/* VIEW TAB 1: HOME CATALOG SPLASH (SEARCH BAR MOVED TO TOP) */}
             {activeTab === 'home' && !activeProductId && (
-              <div className="flex items-center gap-2 mb-4">
-                {/* SEARCH BAR POPUP TRIGGER (As requested: "search bar nya menu pop up") */}
-                <div 
-                  onClick={() => setIsSearchModalOpen(true)}
-                  className="flex-1 relative cursor-pointer group"
-                >
-                  <div className="flex items-center gap-3 bg-zinc-900 border border-zinc-855 hover:border-zinc-800 rounded-2xl px-4 py-3 shadow-lg transition-all font-semibold select-none">
-                    <Search size={15} className="text-zinc-500 shrink-0 group-hover:text-[#0084ff] transition-colors" />
-                    <div className="flex-1 text-[11px] sm:text-xs text-zinc-500">
-                      {searchQuery ? (
-                        <span className="text-zinc-200">Hasil pencarian: <strong className="text-[#0084ff] font-bold">"{searchQuery}"</strong></span>
-                      ) : (
-                        <span>Cari game, produk, atau jasa disini...</span>
-                      )}
-                    </div>
+              <div className="flex flex-col gap-6">
+                
+                {/* SEARCH BAR & FILTER ROW */}
+                <div className="flex items-center gap-3">
+                  {/* MAIN SEARCH INPUT */}
+                  <div className="flex-1 relative group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
+                    <input
+                      type="text"
+                      placeholder="Cari game, produk, atau jasa disini..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full bg-[#080d19] border border-zinc-800 focus:border-zinc-700 text-zinc-100 text-[13px] rounded-2xl pl-12 pr-10 py-3.5 outline-none transition-all placeholder-zinc-600 font-medium"
+                    />
                     {searchQuery && (
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSearchQuery('');
-                        }}
-                        className="text-zinc-500 hover:text-white p-1 rounded-full transition-colors"
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
                       >
-                        <XCircle size={14} />
+                        <XCircle size={15} />
                       </button>
                     )}
                   </div>
-                </div>
 
-                {/* PRICE & SORT COMPACT DROPDOWN TOGGLER - "pindahkan ke samping kanan search bar dengan logo nya garis 3" */}
-                <div className="relative">
-                  <button
-                    onClick={() => setIsPriceFilterOpen(!isPriceFilterOpen)}
-                    className={`p-3 border rounded-2xl transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95 ${
-                      isPriceFilterOpen || minPrice || maxPrice || sortBy !== 'latest'
-                        ? 'bg-[#0084ff] border-[#39a0ff] text-white shadow-[0_0_12px_rgba(0,132,255,0.35)]'
-                        : 'bg-zinc-900 border-zinc-850 text-zinc-400 hover:text-white hover:bg-zinc-800'
-                    }`}
-                    title="Saring Berdasarkan Rentang Harga & Urutan (Garis 3)"
-                  >
-                    <SlidersHorizontal size={16} />
-                  </button>
+                  {/* PRICE & SORT COMPACT DROPDOWN TOGGLER - "garis 3" */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsPriceFilterOpen(!isPriceFilterOpen)}
+                      className={`p-3.5 border rounded-2xl transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95 ${
+                        isPriceFilterOpen || minPrice || maxPrice || sortBy !== 'latest'
+                          ? 'bg-[#0084ff] border-[#0084ff] text-white shadow-md'
+                          : 'bg-[#080d19] border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900'
+                      }`}
+                      title="Filter (Garis 3)"
+                    >
+                      <Menu size={16} />
+                    </button>
 
                   {/* Compact Filter Options Dropdown Portal */}
                   {isPriceFilterOpen && (
@@ -1727,9 +1719,10 @@ export default function App() {
                   )}
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* STYLIZED 2-BANNER PROMO SLIDER WITH ADAPTIVE DEVICE LAYOUT - ONLY IN BERANDA (HOME) */}
+          {/* STYLIZED 2-BANNER PROMO SLIDER WITH ADAPTIVE DEVICE LAYOUT - ONLY IN BERANDA (HOME) */}
             {activeTab === 'home' && !activeProductId && banner && banner.length > 0 && (
               <div className="max-w-full w-full mx-auto mt-1 mb-4 sm:mb-6 animate-fade-in">
                 <PromoSlider banners={banner} />
@@ -1756,10 +1749,10 @@ export default function App() {
                        <button
                          key={cat}
                          onClick={() => setSelectedCategory(cat)}
-                         className={`text-[10px] sm:text-xs px-4 py-2 rounded-xl transition-all duration-200 shrink-0 ${
+                         className={`text-[10px] sm:text-xs px-5 py-2 rounded-full transition-all duration-200 shrink-0 border ${
                            selectedCategory === cat
-                             ? 'bg-[#0084ff] text-white shadow-md font-extrabold'
-                            : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-850 font-extrabold'
+                             ? 'bg-[#0084ff] border-[#0084ff] text-white shadow-md font-extrabold'
+                             : 'bg-transparent border-zinc-800 text-zinc-300 hover:border-zinc-700 hover:text-white font-bold'
                          }`}
                        >
                          {cat}
@@ -1784,10 +1777,10 @@ export default function App() {
                           setActiveProductId(p.id);
                           setActiveTab('detail');
                         }}
-                        className="group bg-[#131315] rounded-[18px] border-[2.5px] border-zinc-900 overflow-hidden cursor-pointer transition-all duration-300 hover:border-zinc-800 hover:-translate-y-1 hover:shadow-lg flex flex-col justify-between"
+                        className="group bg-[#111928] rounded-[20px] border border-zinc-800/80 overflow-hidden cursor-pointer transition-all duration-300 hover:border-zinc-700 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)] flex flex-col justify-between"
                       >
-                        {/* WIDESCREEN ASPECT IMAGE (Matches photo 1 style ratio) */}
-                        <div className="relative aspect-[16/9] w-full overflow-hidden flex items-center justify-center keep-bg-dark">
+                        {/* IMAGE CONTAINER */}
+                        <div className="relative aspect-[4/3] w-full overflow-hidden flex items-center justify-center bg-zinc-900/50">
                           {p.images && p.images.length > 0 && (
                             isVideoVal(p.images[0]) ? (
                                <video
@@ -1796,19 +1789,19 @@ export default function App() {
                                  muted
                                  playsInline
                                />
-                            ) : (
+                             ) : (
                                <img
                                  src={p.images[0]}
                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                  alt={p.title}
                                  referrerPolicy="no-referrer"
                                />
-                            )
+                             )
                           )}
                           
                           {p.stock === 0 && (
-                            <div className="absolute inset-0 keep-sold-out-overlay flex items-center justify-center z-10">
-                              <span className="px-2.5 py-1.5 keep-sold-out-badge rounded-lg text-[9px] uppercase tracking-widest leading-none shadow-md">
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
+                              <span className="px-3 py-1.5 bg-red-600 rounded-full text-[10px] text-white font-black uppercase tracking-widest leading-none shadow-md">
                                 SOLD OUT
                               </span>
                             </div>
@@ -1816,20 +1809,20 @@ export default function App() {
                         </div>
 
                         {/* Text Information block matching layout 1 */}
-                        <div className="p-3.5 flex-1 flex flex-col justify-between gap-2 bg-[#131315]">
+                        <div className="p-3 sm:p-3.5 flex-1 flex flex-col justify-between gap-0.5 bg-[#111928]">
                           <div>
                             {/* Title (matches bold label) */}
-                            <h3 className="font-extrabold text-xs sm:text-[13px] text-zinc-100 group-hover:text-[#0084ff] transition-colors line-clamp-1 leading-snug">
+                            <h3 className="font-extrabold text-[12px] sm:text-[13px] text-white group-hover:text-[#0084ff] transition-colors line-clamp-2 leading-snug min-h-[36px]">
                               {p.title}
                             </h3>
 
                             {/* Subtitle / category (matches "Robux 5 Hari") */}
-                            <div className="text-[10px] text-zinc-400 font-bold mt-1">
+                            <div className="text-[10px] text-zinc-400 font-bold mt-0.5">
                               {p.category}
                             </div>
 
                             {/* Price block - bold blue font custom size */}
-                            <div className="text-sm sm:text-[15px] font-black text-[#0084ff] leading-none mt-2.5 tracking-tight">
+                            <div className="text-[14px] sm:text-[15px] font-black text-[#0084ff] leading-none mt-1.5 tracking-tight">
                               {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(p.price)}
                             </div>
 
@@ -1837,8 +1830,8 @@ export default function App() {
                           </div>
 
                           {/* Footer line with Total Terjual */}
-                          <div className="flex items-center justify-between text-[10px] sm:text-[11px] select-none pt-2 border-t border-zinc-900 mt-2">
-                            <span className="text-zinc-550 font-extrabold">
+                          <div className="flex items-center justify-between text-[10px] select-none pt-2 mt-0.5">
+                            <span className="text-zinc-500 font-bold">
                               {(() => {
                                 const soldQty = transactions
                                   .filter((tx) => tx.productId === p.id && tx.status === 'completed')
@@ -1852,6 +1845,7 @@ export default function App() {
                                 return `${soldQty} Terjual`;
                               })()}
                             </span>
+                            <Heart size={14} className="text-zinc-600 hover:text-red-500 transition-colors" />
                           </div>
 
                         </div>

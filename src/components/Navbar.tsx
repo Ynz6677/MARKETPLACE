@@ -25,7 +25,8 @@ import {
   Menu,
   Flame,
   Sparkles,
-  LogIn
+  LogIn,
+  Search
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -77,164 +78,170 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <>
       {/* 1. TOP HEADER AND UTILITY BAND (PRECISE REPRESENTATION MATCHING WAST SCREENSHOTS) */}
-      <header className="bg-transparent border-b border-[#0084ff]/30 sticky top-0 z-45 w-full select-none backdrop-blur-md shadow-[0_4px_20px_rgba(0,132,255,0.08)]">
+      <header className="bg-[#111928] border-b border-zinc-800/80 sticky top-0 z-45 w-full select-none">
         
-        {/* BRANDING LOGO & UTILITY PILLS CARD BAR */}
-        <div className="w-full flex items-center justify-between px-4 py-2.5 sm:px-6 relative">
+        {/* Detail Produk View - Top Bar */}
+        {activeProductId ? (
+          <div className="w-full flex items-center px-4 py-4 sm:px-6 relative">
+            <button
+              onClick={onBackClick}
+              className="absolute left-4 sm:left-6 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <span className="text-xl leading-none">&larr;</span>
+            </button>
+            <div className="w-full text-center">
+              <h1 className="text-xs sm:text-sm font-black text-white tracking-widest uppercase">DETAIL PRODUK</h1>
+            </div>
+          </div>
+        ) : (
+          <div className="w-full flex items-center justify-between px-4 py-3 sm:px-6 relative">
+            {/* BRANDING LOGO & UTILITY PILLS CARD BAR */}
           
-          {/* Logo on Left - WAST Logo */}
-          <div className="flex items-center cursor-pointer select-none h-8 sm:h-9" onClick={() => onGoToTab('home')}>
-            <SVGLogo className="h-full w-auto" width="auto" height="100%" variant="bear" />
+          {/* Left section: Logo */}
+          <div className="flex items-center gap-4 shrink-0">
+            <div className="flex items-center cursor-pointer select-none h-8 sm:h-9" onClick={() => onGoToTab('home')}>
+              <SVGLogo className="h-full w-auto" width="auto" height="100%" variant="bear" />
+            </div>
           </div>
 
-          {/* Clean Action Capsule Buttons on Right */}
-          <div className="flex items-center gap-2">
+          {/* Middle section: Desktop Search Bar */}
+          <div className="hidden md:flex flex-1 max-w-xl mx-6">
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
+              <input
+                type="text"
+                placeholder="Cari game, produk, atau jasa..."
+                onChange={(e) => onSearchChange(e.target.value)}
+                onFocus={() => {
+                  if (activeTab !== 'home') onGoToTab('home');
+                }}
+                className="w-full bg-[#080d19]/80 border border-zinc-800/80 focus:border-[#0084ff] text-zinc-100 text-[13px] rounded-full pl-10 pr-4 py-2.5 outline-none transition-all placeholder-zinc-500 font-medium"
+              />
+            </div>
+          </div>
+
+          {/* Right section: Actions */}
+          <div className="flex items-center gap-2.5 sm:gap-4 shrink-0">
             
-            {/* If Guest, show Masuk (Login) button cleanly */}
-            {currentUser.id === 'u_guest' && onLoginClick && (
+            {/* If Guest, show Masuk (Login) button */}
+            {currentUser.id === 'u_guest' && onLoginClick ? (
               <button
                 onClick={onLoginClick}
-                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#0084ff] to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-extrabold text-[11px] tracking-tight transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-md shadow-[#0084ff]/20 shrink-0"
+                className="px-4 py-2 rounded-full bg-[#0084ff] hover:bg-blue-600 text-white font-extrabold text-[12px] tracking-tight transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-md"
               >
-                <UserIcon size={11} className="shrink-0 text-white" />
+                <UserIcon size={12} className="shrink-0" />
                 <span>Masuk</span>
               </button>
+            ) : (
+              <>
+                {/* Notification Bell */}
+                <button
+                   onClick={() => onGoToTab('history')} // using history or something for notifs
+                   className="p-2 bg-[#080d19] hover:bg-zinc-800 border border-zinc-800 text-yellow-500 rounded-full relative transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95"
+                   title="Notifikasi"
+                >
+                  <Bell size={16} className="fill-current" />
+                  {notificationCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 text-[9px] text-white font-black rounded-full border-2 border-[#001b3a] flex items-center justify-center">
+                      3
+                    </span>
+                  )}
+                </button>
+
+                {/* Chat Icon */}
+                <button
+                   onClick={() => onGoToTab('chats')}
+                   className="p-2 bg-[#080d19] hover:bg-zinc-800 border border-zinc-800 text-white rounded-full relative transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-95"
+                   title="Notifikasi Chats"
+                >
+                  <MessageSquare size={16} className="fill-current" />
+                </button>
+
+                {/* + Jual Item Button */}
+                <button
+                  onClick={() => onGoToTab('upload')}
+                  className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#0084ff] hover:bg-[#0073e6] text-white font-bold text-[12px] transition-all active:scale-95 shadow-md cursor-pointer"
+                >
+                  <PlusCircle size={14} />
+                  <span>Jual Item</span>
+                </button>
+
+                {/* User Avatar / Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-md bg-[#080d19] border border-zinc-800 overflow-hidden flex items-center justify-center cursor-pointer transition-all hover:border-zinc-700 active:scale-95 text-[#0084ff]"
+                  >
+                    <Menu size={18} className="text-zinc-400" />
+                  </button>
+                  
+                  {/* Absolute Dropdown Overlay panel */}
+                  {isDropdownOpen && (
+                    <>
+                      {/* Overlay Backdrop to dismiss */}
+                      <div 
+                        className="fixed inset-0 z-40 cursor-default bg-transparent" 
+                        onClick={() => setIsDropdownOpen(false)} 
+                      />
+                      <div className="absolute right-0 top-12 w-56 bg-zinc-950 border border-zinc-850 rounded-2xl shadow-2xl p-2 z-50 flex flex-col gap-1 anim-fade-in divide-y divide-zinc-900">
+                        <div className="p-2 cursor-default select-none pb-1.5">
+                          <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest leading-none">Pengguna Aktif</p>
+                          <p className="text-xs font-bold text-zinc-300 truncate mt-1">
+                            {currentUser.id === 'u_guest' ? 'Guest (Belum Masuk)' : currentUser.username}
+                          </p>
+                        </div>
+                        
+                        <div className="space-y-0.5 pt-1.5">
+                          {/* 1. Link Saweria (support) */}
+                          <a
+                            href="https://saweria.co/Waast"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => setIsDropdownOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-zinc-900/50 text-zinc-300 hover:text-white rounded-xl text-xs font-semibold transition-colors"
+                          >
+                            <Heart size={13} className="text-red-500" />
+                            <span>Support</span>
+                          </a>
+
+                          {/* 2. Link Discord (Customer & service) */}
+                          <a
+                            href="https://discord.gg/kQPXrnSbuH"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => setIsDropdownOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-zinc-900/50 text-zinc-300 hover:text-white rounded-xl text-xs font-semibold transition-colors"
+                          >
+                            <Headphones size={13} className="text-indigo-400" />
+                            <span>Discord Server (CS)</span>
+                          </a>
+
+                          {/* Separator below Support and CS */}
+                          <div className="border-t border-[#0084ff]/25 my-1.5" />
+
+                          {/* 4. Log Out / Swapper */}
+                          {currentUser.id !== 'u_guest' && (
+                            <button
+                              onClick={() => {
+                                onLogout();
+                                setIsDropdownOpen(false);
+                              }}
+                              className="flex items-center gap-2.5 px-3 py-2 hover:bg-red-500/10 text-left w-full text-red-400 hover:text-red-300 rounded-xl text-xs font-black transition-colors"
+                            >
+                              <LogOut size={13} />
+                              <span>Keluar Akun</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </>
             )}
-
-            {/* Developer Button shortcut - Uses logo/icon only on mobile as requested! */}
-            {(currentUser.role === 'developer' || currentUser.role === 'admin') && (
-              <button
-                onClick={() => onGoToTab('developer')}
-                className={`p-2 sm:px-3 sm:py-1.5 rounded-xl transition-all flex items-center gap-1 text-[10px] font-black active:scale-95 shrink-0 border uppercase cursor-pointer ${
-                  activeTab === 'developer'
-                    ? 'bg-[#0084ff] border-[#39a0ff] text-white font-black shadow-blue-500/20'
-                    : 'bg-transparent border-[#0084ff]/30 hover:bg-[#0084ff]/10 text-[#0084ff]'
-                }`}
-                title="Buka Panel Developer"
-              >
-                <Shield size={12} className="fill-current shrink-0" />
-                <span className="hidden sm:inline">Dev Panel</span>
-              </button>
-            )}
-
-            {/* Quick Login button for guest users */}
-            {currentUser?.id === 'u_guest' && (
-              <button
-                onClick={onLoginClick}
-                className="px-3 py-1.5 bg-gradient-to-r from-[#0084ff] to-[#00aaff] hover:from-[#0074e0] hover:to-[#0099ff] text-white rounded-xl text-[10px] sm:text-[11px] font-black tracking-tight active:scale-95 transition-all cursor-pointer flex items-center gap-1 shadow-md shadow-[#0084ff]/20 shrink-0 select-none"
-              >
-                <LogIn size={11} className="shrink-0" />
-                <span>Masuk / Daftar</span>
-              </button>
-            )}
-
-            {/* Notification Bell Icon - Sleek blue glowing box */}
-            <button
-               onClick={() => onGoToTab('chats')}
-               className="p-2 bg-transparent border border-[#0084ff]/25 text-[#0084ff] hover:bg-[#0084ff]/10 rounded-xl relative transition-all cursor-pointer flex items-center justify-center shrink-0"
-               title="Notifikasi Chats"
-            >
-              <Bell size={14} />
-              {notificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#0084ff] text-[7.5px] text-white font-black rounded-full border border-zinc-950 flex items-center justify-center animate-pulse">
-                  {notificationCount}
-                </span>
-              )}
-            </button>
-
-            {/* Hamburger 3-Line Menu Button (Custom Dropdown replacement) */}
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className={`p-2 border rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0 active:scale-90 ${
-                isDropdownOpen
-                  ? 'bg-[#0084ff] border-[#39a0ff] text-white'
-                  : 'bg-transparent border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900/40'
-              }`}
-              title="Pilihan Akun & Layanan"
-            >
-              <Menu size={14} />
-            </button>
-
           </div>
-
-          {/* Absolute Dropdown Overlay panel (Garis 3 Menu Options) */}
-          {isDropdownOpen && (
-            <>
-              {/* Overlay Backdrop to dismiss */}
-              <div 
-                className="fixed inset-0 z-40 cursor-default bg-transparent" 
-                onClick={() => setIsDropdownOpen(false)} 
-              />
-              <div className="absolute right-4 top-13 w-56 bg-zinc-950 border border-zinc-850 rounded-2xl shadow-2xl p-2 z-50 flex flex-col gap-1 anim-fade-in divide-y divide-zinc-900">
-                <div className="p-2 cursor-default select-none pb-1.5">
-                  <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest leading-none">Pengguna Aktif</p>
-                  <p className="text-xs font-bold text-zinc-300 truncate mt-1">
-                    {currentUser.id === 'u_guest' ? 'Guest (Belum Masuk)' : currentUser.username}
-                  </p>
-                </div>
-                
-                <div className="space-y-0.5 pt-1.5">
-                  {/* Guest Prominent Login Button */}
-                  {currentUser.id === 'u_guest' && (
-                    <button
-                      onClick={() => {
-                        onLoginClick?.();
-                        setIsDropdownOpen(false);
-                      }}
-                      className="flex items-center gap-2.5 px-3 py-2 bg-[#0084ff]/10 hover:bg-[#0084ff]/20 text-left w-full text-[#0084ff] hover:text-[#39a0ff] rounded-xl text-xs font-black transition-colors mb-1"
-                    >
-                      <LogIn size={13} className="text-primary animate-pulse" />
-                      <span>Masuk / Daftar Baru</span>
-                    </button>
-                  )}
-
-                  {/* 1. Link Saweria (support) */}
-                  <a
-                    href="https://saweria.co/Waast"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setIsDropdownOpen(false)}
-                    className="flex items-center gap-2.5 px-3 py-2 hover:bg-zinc-900/50 text-zinc-300 hover:text-white rounded-xl text-xs font-semibold transition-colors"
-                  >
-                    <Heart size={13} className="text-red-500" />
-                    <span>Support</span>
-                  </a>
-
-                  {/* 2. Link Discord (Customer & service) */}
-                  <a
-                    href="https://discord.gg/kQPXrnSbuH"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setIsDropdownOpen(false)}
-                    className="flex items-center gap-2.5 px-3 py-2 hover:bg-zinc-900/50 text-zinc-300 hover:text-white rounded-xl text-xs font-semibold transition-colors"
-                  >
-                    <Headphones size={13} className="text-indigo-400" />
-                    <span>Discord Server (CS)</span>
-                  </a>
-
-                  {/* Separator below Support and CS */}
-                  <div className="border-t border-[#0084ff]/25 my-1.5" />
-
-                  {/* 4. Log Out / Swapper */}
-                  {currentUser.id !== 'u_guest' && (
-                    <button
-                      onClick={() => {
-                        onLogout();
-                        setIsDropdownOpen(false);
-                      }}
-                      className="flex items-center gap-2.5 px-3 py-2 hover:bg-red-500/10 text-left w-full text-red-400 hover:text-red-300 rounded-xl text-xs font-black transition-colors"
-                    >
-                      <LogOut size={13} />
-                      <span>Keluar Akun</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-
         </div>
-
+        )}
       </header>
 
       {/* 2. PERSISTENT FLOATING BOTTOM NAV BAR (Perfect 5-Tab System as represented in Russian reference picture) */}

@@ -45,9 +45,9 @@ export const PromoSlider: React.FC<PromoSliderProps> = ({ banners }) => {
   };
 
   return (
-    <div className="relative w-full max-w-full md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto select-none group/slider">
+    <div className="relative w-full mx-auto select-none group/slider">
       {/* Slider viewport container */}
-      <div className="w-full overflow-hidden rounded-2xl aspect-[21/9] sm:aspect-[2.5/1] relative bg-zinc-950 border border-zinc-850">
+      <div className="w-full overflow-hidden rounded-2xl aspect-[21/8] sm:aspect-[3.5/1] relative bg-zinc-900">
         <motion.div
           className="flex w-full h-full cursor-grab active:cursor-grabbing"
           drag="x"
@@ -66,58 +66,55 @@ export const PromoSlider: React.FC<PromoSliderProps> = ({ banners }) => {
           {banners.map((banner) => (
             <div
               key={banner.id}
-              className="relative w-full h-full shrink-0 overflow-hidden flex flex-col justify-end p-4 sm:p-6 transition-all duration-300"
-              style={{
-                backgroundColor: banner.bgColor || '#001b3a',
-              }}
+              className="relative w-full h-full shrink-0 overflow-hidden flex flex-col justify-center p-6 sm:p-8 lg:p-10 transition-all duration-300"
+              style={{ backgroundColor: banner.bgColor || '#003d99' }}
             >
-              {banner.imageUrl ? (
-                <img
-                  src={banner.imageUrl}
-                  className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
-                  alt=""
-                  referrerPolicy="no-referrer"
-                />
-              ) : null}
-
-              {/* Styled ambient background highlighting if no banner image is provided */}
-              {!banner.imageUrl && (
-                <div
-                  className="absolute inset-0 opacity-80"
-                  style={{
-                    backgroundImage: `radial-gradient(ellipse at 85% 15%, ${banner.accentColor || '#00f0ff'}1a, transparent), linear-gradient(135deg, ${banner.bgColor || '#001026'} 0%, ${banner.accentColor || '#002255'} 100%)`
-                  }}
-                />
+              {banner.imageUrl && (
+                <>
+                  <img
+                    src={banner.imageUrl}
+                    className="absolute right-0 top-0 h-full w-2/3 object-cover mix-blend-luminosity opacity-80"
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    style={{ maskImage: 'linear-gradient(to left, black 50%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to left, black 50%, transparent 100%)' }}
+                  />
+                  <img
+                    src={banner.imageUrl}
+                    className="absolute right-0 top-0 h-full w-2/3 object-cover opacity-60"
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    style={{ maskImage: 'linear-gradient(to left, black 50%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to left, black 50%, transparent 100%)' }}
+                  />
+                </>
               )}
 
-              {/* Ambient dark gradient overlay to ensure high-contrast text readability */}
-              <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
-
               {/* Headings and CTA Button details */}
-              <div className="z-10 max-w-md space-y-1 sm:space-y-2 select-none text-left">
+              <div className="relative z-10 max-w-lg space-y-2 sm:space-y-3 select-none text-left flex flex-col items-start h-full justify-center">
                 <h2
-                  className="keep-text-white text-xs sm:text-base md:text-lg font-black leading-tight uppercase tracking-tight font-sans drop-shadow-[0_2px_3px_rgba(0,0,0,0.95)] truncate"
+                  className="keep-text-white text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black leading-tight tracking-tight font-sans drop-shadow-md truncate w-full flex items-center gap-2"
                   style={{ color: banner.titleColor || '#ffffff' }}
                 >
-                  {banner.title || 'DISKON SAMPAI 70%'}
+                  <span className="text-2xl sm:text-3xl">🎮</span> {banner.title || 'Beli Robux Termurah!'}
                 </h2>
-                <p
-                  className="keep-text-zinc text-[9px] sm:text-xs uppercase font-black tracking-wider leading-none drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.95)] truncate"
-                  style={{ color: banner.subtitleColor || '#d4d4d8' }}
-                >
-                  {banner.subtitle || 'Promo Spesial Minggu Ini'}
-                </p>
-
-                <div className="pt-1.5 select-none pointer-events-auto">
-                  <a
-                    href={banner.buttonLink || '#'}
-                    className="inline-flex items-center gap-1 px-3 py-1 text-white rounded-full text-[8px] sm:text-[10px] font-extrabold uppercase tracking-wider transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-black/30 cursor-pointer"
-                    style={{ backgroundColor: banner.accentColor || '#0084ff' }}
+                
+                {banner.subtitle ? (
+                  <p 
+                    className="text-xs sm:text-sm md:text-base font-medium opacity-90 keep-text-white drop-shadow-md max-w-[80%] line-clamp-2"
+                    style={{ color: banner.subtitleColor || '#e0e0e0' }}
                   >
-                    <span>{banner.buttonText || 'Buka'}</span>
-                    <span>&rarr;</span>
-                  </a>
-                </div>
+                    {banner.subtitle}
+                  </p>
+                ) : (
+                  <p className="text-xs sm:text-sm md:text-base font-medium text-blue-100 opacity-90 drop-shadow-md max-w-[80%] line-clamp-2">
+                    Trusted seller, proses cepat, harga terbaik
+                  </p>
+                )}
+
+                <button 
+                  className="mt-4 px-5 py-2.5 bg-[#0084ff] hover:bg-blue-500 text-white text-xs sm:text-sm font-black rounded-lg transition-all active:scale-95 shadow-lg border border-blue-400"
+                >
+                  {banner.buttonText || 'Lihat Penawaran'}
+                </button>
               </div>
             </div>
           ))}

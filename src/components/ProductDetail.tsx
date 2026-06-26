@@ -82,19 +82,8 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
   }
 
   return (
-    <div className="space-y-6 animate-fade-in text-zinc-100">
+    <div className="space-y-6 animate-fade-in text-zinc-100 mt-2">
       
-      {/* Return button */}
-      <div>
-        <button
-          onClick={onBack}
-          className="inline-flex items-center gap-2 bg-zinc-900/90 border border-zinc-850 hover:border-[#0084ff] hover:text-[#0084ff] px-4 py-2.5 rounded-xl text-xs font-black text-zinc-300 transition-all duration-200 cursor-pointer active:scale-95 shadow-md"
-        >
-          <ArrowLeft size={14} />
-          Kembali ke Beranda
-        </button>
-      </div>
-
       {/* Main detail layout matching desktop & tablet specifications */}
       <div className="grid md:grid-cols-2 gap-8 md:gap-10 items-start">
         
@@ -201,280 +190,162 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
             </div>
           )}
 
-          {/* BELOW PICTURE: BRANDING, TITLE, PRICE, SOLD, SPECIFICATIONS & DETAILED DESCRIPTION */}
-          <div className="space-y-4 p-5 sm:p-6 bg-[#00142d]/30 border border-[#0084ff]/15 rounded-2xl shadow-xl relative overflow-hidden backdrop-blur-md">
-            {/* Elegant gradient overlay backing */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-[#0084ff]/5 blur-3xl rounded-full pointer-events-none" />
-
-            {/* Category tag & stock info */}
-            <div className="flex items-center justify-between select-none">
-              <span className="text-[10px] bg-gradient-to-r from-[#0084ff]/15 to-[#00f0ff]/15 border border-[#0084ff]/30 text-[#0084ff] font-black px-3 py-1 rounded-lg uppercase tracking-wider">
-                {product.category}
-              </span>
-              <span className={`text-[10.5px] font-black uppercase tracking-wider flex items-center gap-1.5 ${isSoldOut ? 'text-red-500' : product.stock < 20 ? 'text-amber-500' : 'text-emerald-450'}`}>
-                <span className={`w-2 h-2 rounded-full ${isSoldOut ? 'bg-red-500' : product.stock < 15 ? 'bg-amber-505 animate-pulse' : 'bg-green-500 animate-ping'}`} />
-                {isSoldOut ? 'STOK : 0' : product.stock < 20 ? `tersisa: ${product.stock}` : `STOK : ${product.stock}`}
-              </span>
-            </div>
-
-            {/* Title */}
-            <h1 className="text-xl sm:text-2xl font-black text-zinc-50 leading-tight">
-              {product.title}
-            </h1>
-
-            {/* Price block & Terjual count - status layout */}
-            <div className="flex items-center justify-between py-3 border-y border-zinc-900 select-none">
-              <span className="text-2xl sm:text-3xl font-black text-[#0084ff] leading-none tracking-tight">
-                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(product.price)}
-              </span>
-              <div className="text-right">
-                <span className="text-[9px] text-zinc-500 font-black uppercase block tracking-wider leading-none">Status Jualan</span>
-                <span className="text-xs font-black text-zinc-100 bg-zinc-900/60 border border-zinc-850 px-2.5 py-1 rounded-md mt-1 inline-block">
-                  Terjual: <span className="font-black text-[#0084ff]">{formatSoldQty(soldQty)}</span>
-                </span>
-              </div>
-            </div>
-
-            {/* Description panel */}
-            <div className="space-y-2 mt-1">
-              <h3 className="text-[10px] text-zinc-500 font-black uppercase tracking-wider">Keterangan Produk</h3>
-              <div 
-                onClick={() => setShowFullDesc(true)}
-                className="cursor-pointer group/desc p-4 bg-zinc-950/60 hover:bg-zinc-950/90 border border-zinc-850 hover:border-[#0084ff]/30 rounded-xl transition-all shadow-md"
-                title="Klik untuk melihat deskripsi lengkap"
-              >
-                <p className="text-[11px] sm:text-xs text-zinc-200 leading-relaxed font-semibold line-clamp-3">
-                  {product.desc}
-                </p>
-                <div className="mt-3 flex items-center gap-1 text-[9px] text-[#0084ff] font-black uppercase tracking-widest leading-none">
-                  <span>LIHAT LENGKAP DETAILNYA</span>
-                  <span className="group-hover/desc:translate-y-0.5 transition-transform duration-200">&darr;</span>
-                </div>
-              </div>
-            </div>
+          {/* DESKRIPSI PRODUK */}
+          <div className="space-y-3 mt-8">
+            <h3 className="text-xs text-zinc-400 font-extrabold uppercase tracking-widest">Deskripsi Produk</h3>
+            <p className="text-sm text-zinc-300 leading-relaxed font-medium whitespace-pre-wrap">
+              {product.desc}
+            </p>
           </div>
-        </div>
 
-        {/* RIGHT COLUMN: MERCHANT PROFILE, DIRECT CONTACT CHANNELS, QUICK ACTIONS AND SUGGESTION SLIDER */}
-        <div className="space-y-6">
-          
-          {/* Seller profile box - side profile setup */}
-          <div className="bg-zinc-950/40 border border-zinc-850 p-4.5 rounded-2xl space-y-3.5">
-            <h3 className="text-xs text-zinc-500 font-black uppercase tracking-wider">Profil Toko Penjual</h3>
-            
+          {/* INFORMASI PENJUAL */}
+          <div className="space-y-3 mt-8">
+            <h3 className="text-xs text-zinc-400 font-extrabold uppercase tracking-widest">Informasi Penjual</h3>
             <div 
               onClick={() => onViewUserStorefront?.(seller.id)}
-              className="flex items-center gap-3.5 cursor-pointer transition-all duration-200 group/seller select-none"
-              title={`Klik lihat seluruh jualan ${seller.username}`}
+              className="flex items-center gap-4 bg-zinc-900/50 p-4 rounded-2xl cursor-pointer hover:bg-zinc-800 border border-zinc-800 transition-colors"
             >
-              <div className="w-12 h-12 rounded-full bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center font-black text-zinc-100 overflow-hidden shrink-0 group-hover/seller:border-[#0084ff] transition-all duration-200">
+              <div className="w-12 h-12 rounded-xl overflow-hidden bg-zinc-800 border border-zinc-700 flex items-center justify-center font-black text-xl text-zinc-500">
                 {seller.profilePic ? (
                   <img src={seller.profilePic} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
                 ) : (
                   seller.username.slice(0, 2).toUpperCase()
                 )}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="font-extrabold text-zinc-200 truncate text-sm sm:text-base leading-none group-hover/seller:text-[#0084ff] transition-colors duration-200">
-                    {seller.username}
-                  </span>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-zinc-100">{seller.username}</span>
+                  </div>
                   {seller.verified && (
-                    <span className="inline-flex items-center justify-center bg-blue-500 text-white rounded-full w-3.5 h-3.5 text-[8.5px] font-black shrink-0 shadow-sm" title="Terverifikasi">
-                      ✓
-                    </span>
-                  )}
-                  {seller.customRole && (
-                    <span className="text-[8px] bg-amber-500/20 text-yellow-500 font-extrabold px-1.5 py-0.5 rounded shrink-0">
-                      {seller.customRole}
+                    <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-md">
+                      <CheckCircle size={10} />
+                      Terverifikasi
                     </span>
                   )}
                 </div>
-                <p className="text-[10px] text-zinc-450 mt-1.5 font-bold group-hover/seller:text-[#0084ff] transition-colors">Kunjungi Storefront &rarr;</p>
+                <p className="text-xs text-zinc-400 mt-1 font-bold">Verified Seller · 48 Produk</p>
               </div>
             </div>
           </div>
 
-          {/* Quick contact direct setup links */}
-          <div className="space-y-2.5">
-            <h3 className="text-xs text-zinc-500 font-black uppercase tracking-wider">Kontak Cepat Direct</h3>
-            <div className="grid grid-cols-2 gap-3">
-              {product.discord ? (
-                <a
-                  href={product.discord}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-3 bg-gradient-to-r from-[#5865F2] to-[#454fbf] hover:from-[#4954cc] hover:to-[#38409c] text-white text-xs font-black rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 text-center cursor-pointer"
-                >
-                  <span>DIRECT DISCORD</span>
-                </a>
-              ) : (
-                <button
-                  disabled
-                  className="p-3 bg-zinc-950 border border-zinc-900 text-zinc-650 text-xs font-bold rounded-xl flex items-center justify-center gap-2 cursor-not-allowed"
-                >
-                  <span>Discord Kosong</span>
-                </button>
-              )}
+          {/* PRODUK SERUPA DARI TOKO INI */}
+          {finalRecs.length > 0 && (
+            <div className="space-y-3 mt-8">
+              <h3 className="text-xs text-zinc-400 font-extrabold uppercase tracking-widest">Produk Serupa Dari Toko Ini</h3>
+              <div className="flex gap-3 overflow-x-auto pb-3.5 snap-x scrollbar-none">
+                 {finalRecs.map(p => (
+                   <div key={p.id} onClick={() => onSelectProduct?.(p.id)} className="bg-[#111928] rounded-[20px] overflow-hidden cursor-pointer border border-zinc-800/80 hover:border-zinc-700 min-w-[150px] sm:min-w-[160px] snap-start shadow-md hover:-translate-y-1 transition-all">
+                      <div className="relative aspect-[4/3] bg-zinc-900">
+                        {p.images?.[0] && <img src={p.images[0]} className="w-full h-full object-cover" alt={p.title} />}
+                      </div>
+                      <div className="p-3">
+                        <h4 className="text-xs font-bold text-zinc-200 truncate">{p.title}</h4>
+                        <p className="text-[#0084ff] font-black text-sm mt-1">
+                          {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(p.price)}
+                        </p>
+                      </div>
+                   </div>
+                 ))}
+              </div>
+            </div>
+          )}
+        </div>
 
-              {product.wa ? (
-                <a
-                  href={`https://wa.me/${product.wa.replace(/\D/g, '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-3 bg-gradient-to-r from-[#25D366] to-[#1d9e4c] hover:from-[#1ebd53] hover:to-[#17803e] text-white text-xs font-black rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 text-center cursor-pointer"
-                >
-                  <span>DIRECT WHATSAPP</span>
+        {/* RIGHT COLUMN: FLOATING CARD */}
+        <div className="relative w-full">
+          <div className="sticky top-24 bg-[#111827] rounded-3xl p-6 border border-zinc-800/50 shadow-xl space-y-5">
+            <div className="flex items-center gap-2 mb-2">
+               <span className="bg-[#0084ff]/20 text-[#0084ff] text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider">{product.category}</span>
+               {seller.verified && (
+                 <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2.5 py-1 rounded-md flex items-center gap-1"><CheckCircle size={10} /> Verified</span>
+               )}
+            </div>
+            
+            <h1 className="text-2xl font-black text-white leading-tight">
+              {product.title}
+            </h1>
+            
+            <div className="text-3xl font-black text-[#0084ff] leading-none">
+              {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(product.price)}
+            </div>
+            
+            <div className="text-xs text-zinc-400 font-medium">
+              Stok: <span className="text-zinc-300">{product.stock} tersedia</span> · {formatSoldQty(soldQty)} Terjual
+            </div>
+
+            <div className="flex items-center justify-between py-2 border-y border-zinc-800/60">
+              <span className="text-sm font-bold text-zinc-300">Jumlah:</span>
+              <div className="flex items-center bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800">
+                <button className="px-3 py-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">-</button>
+                <span className="px-4 py-1.5 font-bold text-white text-sm bg-zinc-950">1</span>
+                <button className="px-3 py-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">+</button>
+              </div>
+            </div>
+
+            <div className="bg-[#0b1221] rounded-xl p-4 flex items-center justify-between border border-[#0084ff]/20">
+              <span className="text-zinc-400 text-sm font-bold">Total:</span>
+              <span className="text-lg font-black text-[#0084ff]">
+                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(product.price)}
+              </span>
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <button
+                onClick={() => onOpenBuyModal(product)}
+                disabled={isSoldOut || isMine}
+                className="w-full bg-[#0084ff] hover:bg-blue-500 text-white py-4 rounded-xl text-sm font-black flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed border border-blue-400"
+              >
+                <ShoppingCart size={16} />
+                Beli Sekarang
+              </button>
+              
+              <button
+                onClick={() => onInitiateChat(product.id)}
+                disabled={isMine}
+                className="w-full bg-transparent border-2 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 text-zinc-200 py-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <MessageSquare size={16} />
+                Chat Penjual
+              </button>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              {product.discord && (
+                <a href={product.discord} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 bg-zinc-900/50 rounded-xl border border-zinc-800 hover:border-[#5865F2]/50 transition-colors group">
+                  <div className="w-6 h-6 flex items-center justify-center bg-[#5865F2] rounded-md text-white"><MessageSquare size={14} /></div>
+                  <span className="text-xs font-medium text-zinc-400 group-hover:text-zinc-200 truncate">{product.discord.replace('https://','').replace('http://','')}</span>
                 </a>
-              ) : (
-                <button
-                  disabled
-                  className="p-3 bg-zinc-950 border border-zinc-900 text-zinc-650 text-xs font-bold rounded-xl flex items-center justify-center gap-2 cursor-not-allowed"
-                >
-                  <span>WhatsApp Kosong</span>
-                </button>
+              )}
+              {product.wa && (
+                <a href={`https://wa.me/${product.wa.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 bg-zinc-900/50 rounded-xl border border-zinc-800 hover:border-[#25D366]/50 transition-colors group">
+                  <div className="w-6 h-6 flex items-center justify-center bg-[#25D366] rounded-md text-white"><Smartphone size={14} /></div>
+                  <span className="text-xs font-medium text-zinc-400 group-hover:text-zinc-200">{product.wa}</span>
+                </a>
               )}
             </div>
-          </div>
-
-          {/* Core action system handlers */}
-          <div className="pt-2">
-            {!isMine && !isSoldOut && (
-              <div className="grid grid-cols-2 gap-3.5">
-                
-                {/* CHAT PENJUAL SYSTEM BUTTON (Updated chat systems text) */}
-                <button
-                  type="button"
-                  onClick={() => onInitiateChat(product.id)}
-                  className="w-full bg-zinc-950 border border-zinc-850 hover:bg-[#0084ff]/5 hover:border-[#0084ff] text-zinc-200 hover:text-white p-4 rounded-xl text-xs sm:text-xs font-black flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shadow-md"
-                >
-                  <MessageSquare size={15} className="text-[#0084ff]" />
-                  Chat Penjual
-                </button>
-
-                {/* BUY BUTTON */}
-                <button
-                  type="button"
-                  onClick={() => onOpenBuyModal(product)}
-                  className="w-full bg-[#0084ff] hover:bg-[#0066ff] text-white p-4 rounded-xl text-xs sm:text-xs font-black flex items-center justify-center gap-2 shadow-xl shadow-[#0084ff]/10 transition-all active:scale-95 cursor-pointer"
-                >
-                  <ShoppingCart size={15} />
-                  Beli Sekarang
-                </button>
-              </div>
-            )}
-
-            {isMine && (
-              <div className="p-4 bg-zinc-950 border border-zinc-850 rounded-xl text-center">
-                <p className="text-xs font-bold text-zinc-500">
-                  Ini adalah produk jualan pribadi Anda. Kelola etalase Anda dari menu profil toko.
-                </p>
-              </div>
-            )}
-
-            {isSoldOut && !isMine && (
-              <div className="p-4 bg-red-950/20 border border-red-900/30 rounded-xl text-center">
-                <p className="text-xs font-bold text-red-400">
-                  Maaf, produk ini telah ludes terjual. Hubungi penjual jika ada pertanyaan.
-                </p>
-              </div>
-            )}
 
             {/* DEVELOPER SPECIAL ACTION: DELETE POSTING */}
             {currentUser?.role === 'developer' && onDeleteProduct && (
-              <div className="p-4 bg-red-950/10 border border-red-900/30 rounded-xl mt-3 flex flex-col gap-2">
+              <div className="p-4 bg-red-950/10 border border-red-900/30 rounded-xl mt-4 flex flex-col gap-2">
                 <div className="flex items-center gap-1.5 text-red-500 text-xs font-black uppercase tracking-wider">
                   <span className="w-1.5 h-3 bg-red-500 rounded-full animate-pulse" />
                   Developer Action
                 </div>
-                <p className="text-[11px] text-zinc-400 leading-relaxed">
-                  Sebagai Developer / Owner, Anda memiliki akses penuh untuk menghapus postingan jualan ini secara langsung.
-                </p>
-                
                 {!isDeleting ? (
-                  <button
-                    type="button"
-                    onClick={() => setIsDeleting(true)}
-                    className="w-full bg-red-650 hover:bg-red-700 text-white p-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-lg shadow-red-950/20 transition-all active:scale-95 cursor-pointer"
-                  >
-                    Hapus Postingan Ini
+                  <button onClick={() => setIsDeleting(true)} className="w-full bg-red-650 hover:bg-red-700 text-white p-3 rounded-xl text-xs font-black transition-all active:scale-95">
+                    Hapus Postingan
                   </button>
                 ) : (
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsDeleting(false)}
-                      className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-350 p-2.5 rounded-xl text-xs font-black transition-all cursor-pointer"
-                    >
-                      Batal
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onDeleteProduct(product.id);
-                        onBack();
-                      }}
-                      className="flex-1 bg-red-650 hover:bg-red-700 text-white p-2.5 rounded-xl text-xs font-black transition-all cursor-pointer animate-pulse"
-                    >
-                      Ya, Hapus!
-                    </button>
+                  <div className="flex gap-2 mt-1">
+                    <button onClick={() => setIsDeleting(false)} className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-350 p-2.5 rounded-xl text-xs font-black transition-all">Batal</button>
+                    <button onClick={() => { onDeleteProduct(product.id); onBack(); }} className="flex-1 bg-red-650 hover:bg-red-700 text-white p-2.5 rounded-xl text-xs font-black transition-all animate-pulse">Ya, Hapus!</button>
                   </div>
                 )}
               </div>
             )}
           </div>
-
-          {/* SARAN PRODUK (RECOMMENDATION SLIDER) FLOWS FROM LEFT TO RIGHT */}
-          {finalRecs.length > 0 && (
-            <div className="space-y-3 pt-5 border-t border-zinc-850">
-              <div className="flex items-center gap-1.5 justify-between">
-                <h3 className="text-xs text-zinc-400 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
-                  <span className="w-1.5 h-3 bg-primary rounded-full" />
-                  Rekomendasi Produk Lainnya
-                </h3>
-                <span className="text-[9px] text-[#0084ff] font-black uppercase">Saran Populer</span>
-              </div>
-              
-              {/* Horizontal slider container with scrollbar hidden dynamically */}
-              <div className="flex gap-3 overflow-x-auto pb-3.5 rounded-2xl snap-x [&::-webkit-scrollbar]:hidden scrollbar-none">
-                {finalRecs.map((p) => {
-                  return (
-                    <div
-                      key={p.id}
-                      onClick={() => {
-                        onSelectProduct?.(p.id);
-                        // Reset slider on selection change
-                        setCurrentSlideIndex(0);
-                      }}
-                      className="bg-zinc-950/45 hover:bg-zinc-950/85 border border-zinc-900/80 hover:border-[#0084ff]/40 rounded-xl p-3 w-[150px] sm:w-[165px] shrink-0 cursor-pointer transition-all active:scale-97 flex flex-col justify-between group snap-start shadow-lg"
-                    >
-                      <div className="relative aspect-square rounded-lg overflow-hidden mb-2.5 border border-zinc-900 keep-bg-dark bg-black/30">
-                        {isVideoUrl(p.images[0]) ? (
-                          <video src={p.images[0]} className="w-full h-full object-cover" muted />
-                        ) : (
-                          <img src={p.images[0]} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt={p.title} />
-                        )}
-                        <span className="absolute top-1.5 left-1.5 text-[7px] font-black bg-black/75 text-white px-2 py-0.5 rounded uppercase leading-none tracking-wider">
-                          {p.category}
-                        </span>
-                      </div>
-                      <div className="space-y-1 min-w-0 text-left">
-                        <h4 className="text-[10.5px] font-black text-zinc-350 line-clamp-1 group-hover:text-[#0084ff] transition-colors leading-tight">
-                          {p.title}
-                        </h4>
-                        <p className="text-[10px] font-black text-[#0084ff] truncate">
-                          {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(p.price)}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
         </div>
-
       </div>
 
       {/* Bottom Sheet Drawer for Full Description detail view */}

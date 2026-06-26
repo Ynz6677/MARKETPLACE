@@ -147,7 +147,7 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
     <div className="bg-zinc-900 border border-zinc-805 rounded-2xl p-3 sm:p-5 shadow-xl space-y-4">
       
       {/* Dev Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-zinc-800/80 pb-4">
+      <div className="flex flex-col gap-3 border-b border-zinc-800/80 pb-4">
         <div className="flex items-center gap-2.5">
           <div className="p-2 bg-primary/10 text-primary rounded-xl shrink-0">
             <Shield size={18} />
@@ -163,18 +163,18 @@ export const DeveloperPanel: React.FC<DeveloperPanelProps> = ({
         </div>
 
         {/* Mini stats & Actions */}
-        <div className="flex gap-2 items-center">
-          <div className="bg-zinc-950 px-2.5 py-1 rounded-lg border border-zinc-900 flex flex-col items-center min-w-14">
-            <span className="text-[8px] text-zinc-500 font-bold uppercase">User</span>
-            <span className="text-xs font-bold text-primary">{users.length}</span>
+        <div className="flex gap-2 items-center mt-1">
+          <div className="bg-[#0c0c0e] px-4 py-1.5 rounded-xl border border-zinc-800/50 flex flex-col items-center min-w-16">
+            <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">User</span>
+            <span className="text-sm font-black text-primary leading-none mt-1">{users.length}</span>
           </div>
-          <div className="bg-zinc-950 px-2.5 py-1 rounded-lg border border-zinc-900 flex flex-col items-center min-w-14">
-            <span className="text-[8px] text-zinc-500 font-bold uppercase">Item</span>
-            <span className="text-xs font-bold text-primary">{products.length}</span>
+          <div className="bg-[#0c0c0e] px-4 py-1.5 rounded-xl border border-zinc-800/50 flex flex-col items-center min-w-16">
+            <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Item</span>
+            <span className="text-sm font-black text-primary leading-none mt-1">{products.length}</span>
           </div>
-          <div className="bg-zinc-950 px-2.5 py-1 rounded-lg border border-zinc-900 flex flex-col items-center min-w-14">
-            <span className="text-[8px] text-zinc-500 font-bold uppercase">Sale</span>
-            <span className="text-xs font-bold text-primary">{transactions.length}</span>
+          <div className="bg-[#0c0c0e] px-4 py-1.5 rounded-xl border border-zinc-800/50 flex flex-col items-center min-w-16">
+            <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Sale</span>
+            <span className="text-sm font-black text-primary leading-none mt-1">{transactions.length}</span>
           </div>
         </div>
       </div>
