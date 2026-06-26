@@ -47,7 +47,7 @@ export const PromoSlider: React.FC<PromoSliderProps> = ({ banners }) => {
   return (
     <div className="relative w-full mx-auto select-none group/slider">
       {/* Slider viewport container */}
-      <div className="w-full overflow-hidden rounded-2xl aspect-[21/8] sm:aspect-[3.5/1] relative bg-zinc-900">
+      <div className="w-full overflow-hidden rounded-2xl aspect-[2.2/1] sm:aspect-[2.5/1] md:aspect-[3.5/1] relative bg-zinc-900">
         <motion.div
           className="flex w-full h-full cursor-grab active:cursor-grabbing"
           drag="x"
@@ -66,7 +66,7 @@ export const PromoSlider: React.FC<PromoSliderProps> = ({ banners }) => {
           {banners.map((banner) => (
             <div
               key={banner.id}
-              className="relative w-full h-full shrink-0 overflow-hidden flex flex-col justify-center p-6 sm:p-8 lg:p-10 transition-all duration-300"
+              className="relative w-full h-full shrink-0 overflow-hidden flex flex-col justify-center p-5 sm:p-8 lg:p-10 transition-all duration-300"
               style={{ backgroundColor: banner.bgColor || '#003d99' }}
             >
               {banner.imageUrl && (
@@ -89,29 +89,29 @@ export const PromoSlider: React.FC<PromoSliderProps> = ({ banners }) => {
               )}
 
               {/* Headings and CTA Button details */}
-              <div className="relative z-10 max-w-lg space-y-2 sm:space-y-3 select-none text-left flex flex-col items-start h-full justify-center">
+              <div className="relative z-10 max-w-[85%] sm:max-w-lg space-y-1.5 sm:space-y-3 select-none text-left flex flex-col items-start h-full justify-center">
                 <h2
-                  className="keep-text-white text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black leading-tight tracking-tight font-sans drop-shadow-md truncate w-full flex items-center gap-2"
+                  className="keep-text-white text-lg leading-snug sm:text-2xl md:text-3xl lg:text-4xl font-black sm:leading-tight tracking-tight font-sans drop-shadow-md w-full line-clamp-2"
                   style={{ color: banner.titleColor || '#ffffff' }}
                 >
-                  <span className="text-2xl sm:text-3xl">🎮</span> {banner.title || 'Beli Robux Termurah!'}
+                  {banner.title || 'Beli Robux Termurah!'}
                 </h2>
                 
                 {banner.subtitle ? (
                   <p 
-                    className="text-xs sm:text-sm md:text-base font-medium opacity-90 keep-text-white drop-shadow-md max-w-[80%] line-clamp-2"
+                    className="text-[10px] sm:text-sm md:text-base font-medium opacity-90 keep-text-white drop-shadow-md w-full line-clamp-2"
                     style={{ color: banner.subtitleColor || '#e0e0e0' }}
                   >
                     {banner.subtitle}
                   </p>
                 ) : (
-                  <p className="text-xs sm:text-sm md:text-base font-medium text-blue-100 opacity-90 drop-shadow-md max-w-[80%] line-clamp-2">
+                  <p className="text-[10px] sm:text-sm md:text-base font-medium text-blue-100 opacity-90 drop-shadow-md w-full line-clamp-2">
                     Trusted seller, proses cepat, harga terbaik
                   </p>
                 )}
 
                 <button 
-                  className="mt-4 px-5 py-2.5 bg-[#0084ff] hover:bg-blue-500 text-white text-xs sm:text-sm font-black rounded-lg transition-all active:scale-95 shadow-lg border border-blue-400"
+                  className="mt-2 sm:mt-4 px-3 sm:px-5 py-1.5 sm:py-2.5 bg-[#0084ff] hover:bg-blue-500 text-white text-[10px] sm:text-sm font-black rounded-lg transition-all active:scale-95 shadow-lg border border-blue-400"
                 >
                   {banner.buttonText || 'Lihat Penawaran'}
                 </button>

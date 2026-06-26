@@ -116,8 +116,8 @@ const defaultBanners: BannerConfig[] = [
   {
     id: 'b1',
     imageUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1200&q=80',
-    title: 'DISKON BESAR EVENT WAST',
-    subtitle: 'Mulai dari Top Up game hingga voucher belanja digital premium',
+    title: 'PROMO WAST SPESIAL',
+    subtitle: 'Dapatkan penawaran terbaik untuk berbagai produk di sini',
     buttonText: 'Beli Sekarang',
     buttonLink: '#',
     bgColor: '#002966',
