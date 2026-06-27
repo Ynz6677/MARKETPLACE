@@ -2129,7 +2129,7 @@ export default function App() {
                 </div>
               ) : (
                 /* STANDARD CREATE/EDIT PRODUCT VIEW - SCROLL LIMIT */
-                <div className="max-w-2xl mx-auto bg-zinc-900 border border-zinc-800 rounded-3xl p-5 md:p-6 shadow-2xl relative flex flex-col max-h-[80vh] overflow-hidden">
+                <div className="max-w-2xl mx-auto bg-zinc-900 border border-zinc-800 rounded-3xl pt-5 px-5 md:pt-6 md:px-6 pb-0 shadow-2xl relative flex flex-col max-h-[80vh] overflow-hidden">
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-amber-500" />
                   
                   <h2 className="text-xl md:text-2xl font-black text-zinc-100 flex items-center gap-2 mb-1.5 shrink-0">
@@ -2140,8 +2140,8 @@ export default function App() {
                     Isi informasi produk dengan jujur & tawarkan bantuan terbaik kepada pembeli WAST.
                   </p>
 
-                  <div className="flex-grow overflow-y-auto pr-1.5 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
-                    <form onSubmit={handleProductSubmit} className="space-y-5">
+                  <form onSubmit={handleProductSubmit} className="flex flex-col min-h-0 flex-grow">
+                    <div className="flex-grow overflow-y-auto pr-1.5 pb-4 space-y-5 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
                     <div className="grid sm:grid-cols-2 gap-4">
                       
                       {/* Category selectors */}
@@ -2461,8 +2461,9 @@ export default function App() {
                       )}
                     </div>
 
+                    </div>
                     {/* Submit controls */}
-                    <div className="pt-4 border-t border-zinc-800 flex justify-end gap-3.5">
+                    <div className="pt-4 pb-5 md:pb-6 mt-2 border-t border-zinc-800 flex justify-end gap-3.5 shrink-0 bg-zinc-900 sticky bottom-0 z-10">
                       <button
                         type="button"
                         onClick={() => {
@@ -2489,7 +2490,6 @@ export default function App() {
                       </button>
                     </div>
                   </form>
-                  </div>
 
                   {/* Assistive footer */}
                   <div className="mt-6 border-t border-zinc-850 pt-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">

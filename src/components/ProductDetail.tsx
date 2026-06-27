@@ -40,11 +40,13 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Combine original images with variant images
-  const allImages = useMemo(() => {
-    const orig = product.images || [];
-    const variantImgs = (product.variants || []).map(v => v.imageUrl).filter((url): url is string => !!url);
+  const allMediaInfo = useMemo(() => {
+    const orig = (product.images || []).map(url => ({ url, variant: null }));
+    const variantImgs = (product.variants || []).filter(v => !!v.imageUrl).map(v => ({ url: v.imageUrl, variant: v }));
     return [...orig, ...variantImgs];
   }, [product.images, product.variants]);
+
+  const allImages = useMemo(() => allMediaInfo.map(i => i.url), [allMediaInfo]);
 
   useEffect(() => {
     if (allImages.length <= 1) return;
@@ -55,31 +57,28 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
   }, [allImages.length, currentSlideIndex]);
 
   const currentDisplayPrice = useMemo(() => {
-    if (allImages.length > 0 && currentSlideIndex >= (product.images?.length || 0)) {
-       const currentImgUrl = allImages[currentSlideIndex];
-       const matchedVariant = product.variants?.find(v => v.imageUrl === currentImgUrl);
-       if (matchedVariant) return matchedVariant.price;
+    if (allMediaInfo.length > 0 && currentSlideIndex < allMediaInfo.length) {
+       const info = allMediaInfo[currentSlideIndex];
+       if (info.variant) return info.variant.price;
     }
     return product.price;
-  }, [currentSlideIndex, allImages, product.price, product.images, product.variants]);
+  }, [currentSlideIndex, allMediaInfo, product.price]);
 
   const currentDisplayStock = useMemo(() => {
-    if (allImages.length > 0 && currentSlideIndex >= (product.images?.length || 0)) {
-       const currentImgUrl = allImages[currentSlideIndex];
-       const matchedVariant = product.variants?.find(v => v.imageUrl === currentImgUrl);
-       if (matchedVariant) return matchedVariant.stock ?? product.stock;
+    if (allMediaInfo.length > 0 && currentSlideIndex < allMediaInfo.length) {
+       const info = allMediaInfo[currentSlideIndex];
+       if (info.variant) return info.variant.stock ?? product.stock;
     }
     return product.stock;
-  }, [currentSlideIndex, allImages, product.stock, product.images, product.variants]);
+  }, [currentSlideIndex, allMediaInfo, product.stock]);
 
   const currentDisplayTitle = useMemo(() => {
-    if (allImages.length > 0 && currentSlideIndex >= (product.images?.length || 0)) {
-       const currentImgUrl = allImages[currentSlideIndex];
-       const matchedVariant = product.variants?.find(v => v.imageUrl === currentImgUrl);
-       if (matchedVariant && matchedVariant.name) return matchedVariant.name;
+    if (allMediaInfo.length > 0 && currentSlideIndex < allMediaInfo.length) {
+       const info = allMediaInfo[currentSlideIndex];
+       if (info.variant && info.variant.name) return info.variant.name;
     }
     return product.title;
-  }, [currentSlideIndex, allImages, product.title, product.images, product.variants]);
+  }, [currentSlideIndex, allMediaInfo, product.title]);
 
   const isVideoUrl = (url?: string | null) => {
     return url?.startsWith('data:video/') || url?.match(/\.(mp4|webm|ogg|mov|mkv|3gp)(\?.*)?$/i);
@@ -280,9 +279,19 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
         {/* 3. DESKRIPSI PRODUK */}
         <div className="space-y-3">
           <h3 className="text-xs text-zinc-400 font-extrabold uppercase tracking-widest">Deskripsi Produk</h3>
-          <p className="text-sm text-zinc-300 leading-relaxed font-medium whitespace-pre-wrap bg-zinc-900/40 p-4 rounded-2xl border border-zinc-800">
-            {product.desc}
-          </p>
+          <div className="bg-zinc-900/40 p-4 rounded-2xl border border-zinc-800">
+            <p className="text-sm text-zinc-300 leading-relaxed font-medium whitespace-pre-wrap line-clamp-4">
+              {product.desc}
+            </p>
+            {(product.desc.length > 80 || product.desc.split('\n').length > 3) && (
+              <button 
+                onClick={() => setShowFullDesc(true)}
+                className="text-[#0084ff] font-bold text-xs mt-2 hover:underline inline-flex items-center gap-1"
+              >
+                Baca Selengkapnya <ChevronRight size={14} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* 4. INFORMASI PENJUAL */}
@@ -303,11 +312,18 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="font-extrabold text-zinc-100">{seller.username}</span>
+                  {seller.customRole && (
+                    <span className="bg-primary/20 text-primary text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">{seller.customRole}</span>
+                  )}
                 </div>
-                {seller.verified && (
+                {seller.verified ? (
                   <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-md">
                     <CheckCircle size={10} />
                     Terverifikasi
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-[10px] text-zinc-400 font-bold bg-zinc-500/10 border border-zinc-500/20 px-2 py-1 rounded-md">
+                    Tidak Terverifikasi
                   </span>
                 )}
               </div>
