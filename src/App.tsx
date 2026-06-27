@@ -2621,10 +2621,17 @@ export default function App() {
                             </div>
                             <div>
                               <span className="text-zinc-550 font-semibold block text-[10.5px]">Status Seller</span>
-                              <span className="text-green-500 font-black text-xs uppercase flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                Online
-                              </span>
+                              {u.storeStatus === 'offline' ? (
+                                <span className="text-zinc-500 font-black text-xs uppercase flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
+                                  Offline
+                                </span>
+                              ) : (
+                                <span className="text-green-500 font-black text-xs uppercase flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                  Online
+                                </span>
+                              )}
                             </div>
                           </div>
 

@@ -327,7 +327,20 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-zinc-400 mt-1 font-bold">{sellerProductsCount} produk</p>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-xs text-zinc-400 font-bold">{sellerProductsCount} produk</p>
+                {seller.storeStatus === 'offline' ? (
+                  <span className="text-zinc-500 font-black text-[10px] uppercase flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
+                    Offline
+                  </span>
+                ) : (
+                  <span className="text-green-500 font-black text-[10px] uppercase flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                    Online
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -35,6 +35,7 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({
   const [password, setPassword] = useState('');
   const [customRole, setCustomRole] = useState(currentUser.customRole);
   const [profilePic, setProfilePic] = useState<string | null>(currentUser.profilePic);
+  const [storeStatus, setStoreStatus] = useState<'online' | 'offline'>(currentUser.storeStatus || 'online');
   
   const [toastText, setToastText] = useState<string | null>(null);
   const [cropperSrc, setCropperSrc] = useState<string | null>(null);
@@ -75,6 +76,7 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({
       username: username.trim(),
       customRole: customRole.trim(),
       profilePic,
+      storeStatus,
     };
 
     if (password.trim() !== '') {
@@ -206,6 +208,37 @@ export const ProfilePanel: React.FC<ProfilePanelProps> = ({
                   placeholder="Buat sandi baru (Aman)"
                   className="w-full bg-zinc-950 border border-zinc-850 rounded-xl py-2.5 pl-10 pr-4 text-xs sm:text-sm text-zinc-100 placeholder-zinc-650 outline-none focus:border-primary transition-all font-mono"
                 />
+              </div>
+            </div>
+
+            {/* Store Status Toggle */}
+            <div className="space-y-1 pb-2">
+              <label className="text-xs text-zinc-400 font-bold">Status Toko</label>
+              <div className="flex items-center gap-4 bg-zinc-950 border border-zinc-850 rounded-xl p-2.5">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="storeStatus"
+                    checked={storeStatus === 'online'}
+                    onChange={() => setStoreStatus('online')}
+                    className="accent-green-500 w-4 h-4"
+                  />
+                  <span className="text-sm text-zinc-200 font-semibold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> Online
+                  </span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="storeStatus"
+                    checked={storeStatus === 'offline'}
+                    onChange={() => setStoreStatus('offline')}
+                    className="accent-zinc-500 w-4 h-4"
+                  />
+                  <span className="text-sm text-zinc-400 font-semibold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" /> Offline
+                  </span>
+                </label>
               </div>
             </div>
 
