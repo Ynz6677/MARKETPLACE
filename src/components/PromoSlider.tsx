@@ -89,9 +89,9 @@ export const PromoSlider: React.FC<PromoSliderProps> = ({ banners }) => {
               )}
 
               {/* Headings and CTA Button details */}
-              <div className="relative z-10 max-w-[85%] sm:max-w-lg space-y-1.5 sm:space-y-3 select-none text-left flex flex-col items-start h-full justify-center">
+              <div className="relative z-10 max-w-[70%] sm:max-w-lg space-y-2 sm:space-y-3 select-none text-left flex flex-col items-start h-full justify-center">
                 <h2
-                  className="keep-text-white text-lg leading-snug sm:text-2xl md:text-3xl lg:text-4xl font-black sm:leading-tight tracking-tight font-sans drop-shadow-md w-full line-clamp-2"
+                  className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-black leading-tight tracking-tight font-sans drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] w-full line-clamp-3 sm:line-clamp-2"
                   style={{ color: banner.titleColor || '#ffffff' }}
                 >
                   {banner.title || 'Beli Robux Termurah!'}
@@ -99,19 +99,19 @@ export const PromoSlider: React.FC<PromoSliderProps> = ({ banners }) => {
                 
                 {banner.subtitle ? (
                   <p 
-                    className="text-[10px] sm:text-sm md:text-base font-medium opacity-90 keep-text-white drop-shadow-md w-full line-clamp-2"
+                    className="text-xs sm:text-sm md:text-base font-medium drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] w-full line-clamp-2 sm:line-clamp-2"
                     style={{ color: banner.subtitleColor || '#e0e0e0' }}
                   >
                     {banner.subtitle}
                   </p>
                 ) : (
-                  <p className="text-[10px] sm:text-sm md:text-base font-medium text-blue-100 opacity-90 drop-shadow-md w-full line-clamp-2">
+                  <p className="text-xs sm:text-sm md:text-base font-medium drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] text-[#e0e0e0] w-full line-clamp-2">
                     Trusted seller, proses cepat, harga terbaik
                   </p>
                 )}
 
                 <button 
-                  className="mt-2 sm:mt-4 px-3 sm:px-5 py-1.5 sm:py-2.5 bg-[#0084ff] hover:bg-opacity-80 text-white text-[10px] sm:text-sm font-black rounded-lg transition-all active:scale-95 shadow-lg border border-white/20"
+                  className="mt-2 px-4 py-2 bg-[#0084ff] hover:bg-opacity-80 text-white text-xs sm:text-sm font-black rounded-lg transition-all active:scale-95 shadow-lg border border-white/20"
                   style={{ backgroundColor: banner.accentColor || '#0084ff' }}
                 >
                   {banner.buttonText || 'Lihat Penawaran'}

@@ -80,7 +80,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
       '----------------------------------------',
       formatRow('Penjual', sellerName),
       formatRow('Pelanggan', buyerName),
-      formatRow('Produk', tx.productName),
+      formatRow('Produk', tx.variantName || tx.productName),
       '----------------------------------------',
       formatRow('Harga', formattedPrice),
       formatRow('Jumlah', `${tx.qty}x`),
@@ -263,7 +263,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({
                     </div>
 
                     <div>
-                      <h3 className="font-extrabold text-[11px] text-zinc-150 line-clamp-1 leading-snug">{tx.productName}</h3>
+                      <h3 className="font-extrabold text-[11px] text-zinc-150 line-clamp-1 leading-snug">{tx.variantName || tx.productName}</h3>
                       <p className="text-[9.5px] text-zinc-400 font-semibold leading-none mt-0.5">
                         {isBuyer ? 'Penjual' : 'Pembeli'}: <span className="text-[#0084ff] font-bold">{partnerName}</span>
                       </p>

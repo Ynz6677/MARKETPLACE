@@ -354,7 +354,7 @@ export default function App() {
   const [formDiscord, setFormDiscord] = useState('');
   const [formWa, setFormWa] = useState('');
   const [formImages, setFormImages] = useState<string[]>([]);
-  const [formVariants, setFormVariants] = useState<{name: string; price: string; imageUrl: string}[]>([]);
+  const [formVariants, setFormVariants] = useState<{id?: string; name: string; price: string; stock: string; imageUrl: string}[]>([]);
   const [sellerRegEmail, setSellerRegEmail] = useState('');
 
   // Buying Modal configuration states
@@ -740,7 +740,12 @@ export default function App() {
             discord: formDiscord.trim(),
             wa: formWa.trim(),
             images: formImages,
-            variants: formVariants.length > 0 ? formVariants.map((v, i) => ({...v, id: v.name + Date.now() + i, price: parseInt(v.price) || priceNum})) : undefined,
+            variants: formVariants.length > 0 ? formVariants.map((v, i) => ({
+              ...v,
+              id: v.id || (v.name + Date.now() + i),
+              price: !isNaN(parseInt(v.price)) ? parseInt(v.price) : priceNum,
+              stock: !isNaN(parseInt(v.stock)) ? parseInt(v.stock) : stockNum
+            })) : undefined,
           };
         }
         return p;
@@ -761,7 +766,12 @@ export default function App() {
         discord: formDiscord.trim(),
         wa: formWa.trim(),
         images: formImages,
-        variants: formVariants.length > 0 ? formVariants.map((v, i) => ({...v, id: v.name + Date.now() + i, price: parseInt(v.price) || priceNum})) : undefined,
+        variants: formVariants.length > 0 ? formVariants.map((v, i) => ({
+          ...v,
+          id: v.id || (v.name + Date.now() + i),
+          price: !isNaN(parseInt(v.price)) ? parseInt(v.price) : priceNum,
+          stock: !isNaN(parseInt(v.stock)) ? parseInt(v.stock) : stockNum
+        })) : undefined,
       };
 
       const updated = [newProduct, ...products];
@@ -800,7 +810,7 @@ export default function App() {
     setFormDiscord(prod.discord);
     setFormWa(prod.wa);
     setFormImages(prod.images || []);
-    setFormVariants(prod.variants ? prod.variants.map(v => ({ name: v.name, price: v.price.toString(), imageUrl: v.imageUrl || '' })) : []);
+    setFormVariants(prod.variants ? prod.variants.map(v => ({ id: v.id, name: v.name, price: v.price.toString(), stock: (v.stock ?? 1).toString(), imageUrl: v.imageUrl || '' })) : []);
     setActiveTab('upload');
   };
 
@@ -890,19 +900,36 @@ export default function App() {
     }
 
     // Auto-capping to stock if requested qty exceeds stock
+    let maxAvailableStock = activeBuyingProduct.stock;
+    if (activeBuyingProduct.variants && activeBuyingProduct.variants.length > 0) {
+      const selectedVar = activeBuyingProduct.variants.find(v => v.id === buyVariantId);
+      if (selectedVar) maxAvailableStock = selectedVar.stock;
+    }
+
     let finalQty = requestQty;
-    if (requestQty > activeBuyingProduct.stock) {
-      finalQty = activeBuyingProduct.stock;
+    if (requestQty > maxAvailableStock) {
+      finalQty = maxAvailableStock;
       triggerToast(
-        `Stok tersisa hanya ${activeBuyingProduct.stock} pcs. Jumlah beli disesuaikan otomatis!`,
+        `Stok tersisa hanya ${maxAvailableStock} pcs. Jumlah beli disesuaikan otomatis!`,
         'info'
       );
     }
 
-    // Reduce stock from product listing
+    // Reduce stock from product listing (and variant if applicable)
     const updatedProducts = products.map((p) => {
       if (p.id === activeBuyingProduct.id) {
-        return { ...p, stock: p.stock - finalQty };
+        let updatedVariants = p.variants;
+        let newStock = p.stock;
+        
+        if (buyVariantId && p.variants) {
+          updatedVariants = p.variants.map(v => 
+            v.id === buyVariantId ? { ...v, stock: v.stock - finalQty } : v
+          );
+        } else {
+          newStock = p.stock - finalQty;
+        }
+
+        return { ...p, stock: newStock, variants: updatedVariants };
       }
       return p;
     });
@@ -924,6 +951,7 @@ export default function App() {
       productId: activeBuyingProduct.id,
       productName: activeBuyingProduct.title,
       variantName,
+      variantId: buyVariantId || undefined,
       price: purchasedPrice,
       qty: finalQty,
       buyerId: currentUser.id,
@@ -944,7 +972,7 @@ export default function App() {
       productId: activeBuyingProduct.id,
       senderId: currentUser.id,
       receiverId: activeBuyingProduct.sellerId,
-      text: `🔔 [PESANAN MASUK] Saya telah melakukan pembelian sebanyak ${finalQty}x. Mohon konfirmasi atau batalkan transaksi dari bilah kasir Anda. ID: ${newTx.id}`,
+      text: `🔔 [PESANAN MASUK] Saya telah melakukan pembelian produk "${variantName || activeBuyingProduct.title}" sebanyak ${finalQty}x. Mohon konfirmasi atau batalkan transaksi dari bilah kasir Anda. ID: ${newTx.id}`,
       timestamp: Date.now(),
       isRead: false,
     };
@@ -990,7 +1018,18 @@ export default function App() {
         // Refund/return stock back
         const restockProducts = products.map((p) => {
           if (p.id === tx.productId) {
-            return { ...p, stock: p.stock + tx.qty };
+            let updatedVariants = p.variants;
+            let newStock = p.stock;
+
+            if (tx.variantId && p.variants) {
+              updatedVariants = p.variants.map(v => 
+                v.id === tx.variantId ? { ...v, stock: v.stock + tx.qty } : v
+              );
+            } else {
+              newStock = p.stock + tx.qty;
+            }
+
+            return { ...p, stock: newStock, variants: updatedVariants };
           }
           return p;
         });
@@ -1826,15 +1865,6 @@ export default function App() {
                               </div>
                             )}
                           </div>
-                          
-                          {/* Variant small images */}
-                          {p.variants && p.variants.some(v => v.imageUrl) && (
-                            <div className="h-10 w-full bg-zinc-950/80 flex gap-1 p-1 overflow-x-auto scrollbar-none border-t border-zinc-800 shrink-0">
-                              {p.variants.filter(v => v.imageUrl).map((v) => (
-                                <img key={v.id} src={v.imageUrl!} alt={v.name} className="h-full aspect-square object-cover rounded-md bg-zinc-900 border border-zinc-800" referrerPolicy="no-referrer" title={v.name} />
-                              ))}
-                            </div>
-                          )}
                         </div>
 
                         {/* Text Information block matching layout 1 */}
@@ -2173,13 +2203,13 @@ export default function App() {
                     {/* Variants / Kategori Produk */}
                     <div className="space-y-3 pt-3 border-t border-zinc-800">
                       <div className="flex items-center justify-between">
-                        <label className="text-xs text-zinc-400 font-bold">Variasi Produk (Opsional)</label>
+                        <label className="text-xs text-zinc-400 font-bold">Produk Lainnya (Opsional)</label>
                         <button
                           type="button"
-                          onClick={() => setFormVariants([...formVariants, { name: '', price: '', imageUrl: '' }])}
+                          onClick={() => setFormVariants([...formVariants, { name: '', price: '', stock: '', imageUrl: '' }])}
                           className="text-[10px] bg-primary/20 text-primary px-2 py-1 rounded hover:bg-primary/30 font-bold flex items-center gap-1"
                         >
-                          <Plus size={12} /> Tambah Variasi
+                          <Plus size={12} /> Tambah Produk
                         </button>
                       </div>
                       
@@ -2188,16 +2218,16 @@ export default function App() {
                           <button
                             type="button"
                             onClick={() => setFormVariants(formVariants.filter((_, i) => i !== idx))}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 transition-opacity z-10 hover:bg-red-600"
                           >
                             <Trash2 size={12} />
                           </button>
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div className="space-y-1">
-                              <label className="text-[10px] text-zinc-500 font-bold">Nama Variasi</label>
+                              <label className="text-[10px] text-zinc-500 font-bold">Nama Produk</label>
                               <input
                                 type="text"
-                                placeholder="Cth: Paket 1 / Warna Merah"
+                                placeholder="Cth: Paket 1"
                                 value={variant.name}
                                 onChange={(e) => {
                                   const newVariants = [...formVariants];
@@ -2208,7 +2238,7 @@ export default function App() {
                               />
                             </div>
                             <div className="space-y-1">
-                              <label className="text-[10px] text-zinc-500 font-bold">Harga Variasi</label>
+                              <label className="text-[10px] text-zinc-500 font-bold">Harga Produk</label>
                               <input
                                 type="number"
                                 placeholder="Cth: 50000"
@@ -2221,11 +2251,25 @@ export default function App() {
                                 className="w-full bg-zinc-950 border border-zinc-800 text-xs p-2 rounded-lg text-zinc-200 outline-none focus:border-primary font-bold font-mono"
                               />
                             </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] text-zinc-500 font-bold">Stok Produk</label>
+                              <input
+                                type="number"
+                                placeholder="Cth: 10"
+                                value={variant.stock}
+                                onChange={(e) => {
+                                  const newVariants = [...formVariants];
+                                  newVariants[idx].stock = e.target.value;
+                                  setFormVariants(newVariants);
+                                }}
+                                className="w-full bg-zinc-950 border border-zinc-800 text-xs p-2 rounded-lg text-zinc-200 outline-none focus:border-primary font-bold font-mono"
+                              />
+                            </div>
                           </div>
                           
                           <div className="space-y-1">
                             <label className="text-[10px] text-zinc-500 font-bold flex items-center justify-between">
-                              <span>Foto Variasi (Opsional)</span>
+                              <span>Foto Produk (Opsional)</span>
                             </label>
                             {variant.imageUrl ? (
                               <div className="relative inline-block">
@@ -2712,7 +2756,7 @@ export default function App() {
             {/* Variant Selection */}
             {activeBuyingProduct.variants && activeBuyingProduct.variants.length > 0 && (
               <div className="space-y-2 pt-2">
-                <label className="text-xs text-zinc-400 font-extrabold block">Pilih Variasi Produk</label>
+                <label className="text-xs text-zinc-400 font-extrabold block">Pilih Produk Lainnya</label>
                 <div className="grid grid-cols-2 gap-2">
                   {activeBuyingProduct.variants.map((v) => (
                     <button
@@ -2741,7 +2785,7 @@ export default function App() {
             <div className="space-y-1.5">
               <label className="text-xs text-zinc-400 font-extrabold flex justify-between">
                 <span>Atur Jumlah Beli</span>
-                <span className="text-zinc-550 opacity-85">({activeBuyingProduct.stock} tersedia)</span>
+                <span className="text-zinc-550 opacity-85">({activeBuyingProduct.variants && activeBuyingProduct.variants.length > 0 ? (activeBuyingProduct.variants.find(v => v.id === buyVariantId)?.stock ?? activeBuyingProduct.stock) : activeBuyingProduct.stock} tersedia)</span>
               </label>
               <input
                 type="number"
@@ -2754,9 +2798,9 @@ export default function App() {
             </div>
 
             {/* Qty feedback label */}
-            {parseInt(buyQty) > activeBuyingProduct.stock && (
+            {parseInt(buyQty) > (activeBuyingProduct.variants && activeBuyingProduct.variants.length > 0 ? (activeBuyingProduct.variants.find(v => v.id === buyVariantId)?.stock ?? activeBuyingProduct.stock) : activeBuyingProduct.stock) && (
               <p className="text-[11px] text-amber-500 italic font-semibold text-center mt-1">
-                ⚠️ Melebihi batas stok! Pembelian disesuaikan otomatis menjadi membeli {activeBuyingProduct.stock} pcs.
+                ⚠️ Melebihi batas stok! Pembelian disesuaikan otomatis menjadi membeli {activeBuyingProduct.variants && activeBuyingProduct.variants.length > 0 ? (activeBuyingProduct.variants.find(v => v.id === buyVariantId)?.stock ?? activeBuyingProduct.stock) : activeBuyingProduct.stock} pcs.
               </p>
             )}
 
@@ -2771,7 +2815,7 @@ export default function App() {
                 onClick={handleExecuteOrder}
                 className="flex-1 py-3 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-black transition-all shadow-lg active:scale-95"
               >
-                Konfirmasi Beli ({new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format((activeBuyingProduct.variants && activeBuyingProduct.variants.length > 0 ? activeBuyingProduct.variants.find(v => v.id === buyVariantId)?.price || activeBuyingProduct.price : activeBuyingProduct.price) * Math.min(activeBuyingProduct.stock, parseInt(buyQty) || 1))})
+                Konfirmasi Beli ({new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format((activeBuyingProduct.variants && activeBuyingProduct.variants.length > 0 ? activeBuyingProduct.variants.find(v => v.id === buyVariantId)?.price || activeBuyingProduct.price : activeBuyingProduct.price) * Math.min(activeBuyingProduct.variants && activeBuyingProduct.variants.length > 0 ? (activeBuyingProduct.variants.find(v => v.id === buyVariantId)?.stock ?? activeBuyingProduct.stock) : activeBuyingProduct.stock, parseInt(buyQty) || 1))})
               </button>
             </div>
 

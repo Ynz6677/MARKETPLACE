@@ -16,6 +16,7 @@ export interface ProductVariant {
   id: string;
   name: string;
   price: number;
+  stock: number;
   imageUrl?: string;
 }
 
@@ -38,6 +39,7 @@ export interface Transaction {
   productId: number;
   productName: string;
   variantName?: string;
+  variantId?: string;
   price: number;
   qty: number;
   buyerId: string;
