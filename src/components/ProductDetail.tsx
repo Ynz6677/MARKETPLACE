@@ -190,6 +190,23 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
             </div>
           )}
 
+          {/* Variants selector strip (visual info only) */}
+          {product.variants && product.variants.some(v => v.imageUrl) && (
+            <div className="mt-2 space-y-2">
+              <h3 className="text-[10px] text-zinc-500 font-extrabold uppercase tracking-widest">Varian Produk</h3>
+              <div className="flex gap-2.5 overflow-x-auto pb-1.5 scrollbar-none">
+                {product.variants.filter(v => v.imageUrl).map((v) => (
+                  <div key={v.id} className="relative w-14 h-14 rounded-xl overflow-hidden border-2 border-zinc-800 shrink-0 group">
+                    <img src={v.imageUrl!} className="w-full h-full object-cover" alt={v.name} referrerPolicy="no-referrer" />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-1 text-center">
+                      <span className="text-[8px] font-bold text-white leading-tight">{v.name}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* DESKRIPSI PRODUK */}
           <div className="space-y-3 mt-8">
             <h3 className="text-xs text-zinc-400 font-extrabold uppercase tracking-widest">Deskripsi Produk</h3>

@@ -12,6 +12,13 @@ export interface User {
   email?: string;
 }
 
+export interface ProductVariant {
+  id: string;
+  name: string;
+  price: number;
+  imageUrl?: string;
+}
+
 export interface Product {
   id: number;
   sellerId: string;
@@ -23,12 +30,14 @@ export interface Product {
   discord: string;
   wa: string;
   images: string[];
+  variants?: ProductVariant[];
 }
 
 export interface Transaction {
   id: string;
   productId: number;
   productName: string;
+  variantName?: string;
   price: number;
   qty: number;
   buyerId: string;

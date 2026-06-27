@@ -40,7 +40,7 @@ import {
   resetAllDataExceptOwner,
   syncLogo
 } from './db';
-import { Sparkles, ShoppingBag, ShieldAlert, BadgeCheck, MessageSquare, Plus, CheckCircle, XCircle, AlertCircle, Search, Users, SlidersHorizontal, Heart, Mail, Headphones, Home, History, PlusCircle, LogOut, LogIn, Shield, User as UserIcon, Menu } from 'lucide-react';
+import { Sparkles, ShoppingBag, ShieldAlert, BadgeCheck, MessageSquare, Plus, CheckCircle, XCircle, AlertCircle, Search, Users, SlidersHorizontal, Heart, Mail, Headphones, Home, History, PlusCircle, LogOut, LogIn, Shield, User as UserIcon, Menu, Trash2, X } from 'lucide-react';
 
 export default function App() {
   // Splash Screen Screen Loader
@@ -354,11 +354,13 @@ export default function App() {
   const [formDiscord, setFormDiscord] = useState('');
   const [formWa, setFormWa] = useState('');
   const [formImages, setFormImages] = useState<string[]>([]);
+  const [formVariants, setFormVariants] = useState<{name: string; price: string; imageUrl: string}[]>([]);
   const [sellerRegEmail, setSellerRegEmail] = useState('');
 
   // Buying Modal configuration states
   const [activeBuyingProduct, setActiveBuyingProduct] = useState<Product | null>(null);
   const [buyQty, setBuyQty] = useState('1');
+  const [buyVariantId, setBuyVariantId] = useState<string | null>(null);
 
   // Built-in Notifications
   const [activeNotification, setActiveNotification] = useState<{ text: string; type: 'success' | 'info' | 'error' } | null>(null);
@@ -738,6 +740,7 @@ export default function App() {
             discord: formDiscord.trim(),
             wa: formWa.trim(),
             images: formImages,
+            variants: formVariants.length > 0 ? formVariants.map((v, i) => ({...v, id: v.name + Date.now() + i, price: parseInt(v.price) || priceNum})) : undefined,
           };
         }
         return p;
@@ -758,6 +761,7 @@ export default function App() {
         discord: formDiscord.trim(),
         wa: formWa.trim(),
         images: formImages,
+        variants: formVariants.length > 0 ? formVariants.map((v, i) => ({...v, id: v.name + Date.now() + i, price: parseInt(v.price) || priceNum})) : undefined,
       };
 
       const updated = [newProduct, ...products];
@@ -774,6 +778,7 @@ export default function App() {
     setFormDiscord('');
     setFormWa('');
     setFormImages([]);
+    setFormVariants([]);
     setActiveTab('profile'); // Send them to look at their inventory
   };
 
@@ -795,6 +800,7 @@ export default function App() {
     setFormDiscord(prod.discord);
     setFormWa(prod.wa);
     setFormImages(prod.images || []);
+    setFormVariants(prod.variants ? prod.variants.map(v => ({ name: v.name, price: v.price.toString(), imageUrl: v.imageUrl || '' })) : []);
     setActiveTab('upload');
   };
 
@@ -865,6 +871,7 @@ export default function App() {
   const handleOpenBuyBox = (product: Product) => {
     setActiveBuyingProduct(product);
     setBuyQty('1');
+    setBuyVariantId(product.variants && product.variants.length > 0 ? product.variants[0].id : null);
   };
 
   // Execute buy: "dan jumlah ketika melebihi batas stock otomatis membeli stock yg tersedia"
@@ -900,13 +907,24 @@ export default function App() {
       return p;
     });
     saveProductsToLocal(updatedProducts);
+    
+    let purchasedPrice = activeBuyingProduct.price;
+    let variantName = undefined;
+    if (buyVariantId && activeBuyingProduct.variants) {
+      const selectedVariant = activeBuyingProduct.variants.find(v => v.id === buyVariantId);
+      if (selectedVariant) {
+        purchasedPrice = selectedVariant.price;
+        variantName = selectedVariant.name;
+      }
+    }
 
     // Save transaction under 'waiting_confirmation' queue state (as strictly requested)
     const newTx: Transaction = {
       id: 'TX_' + Math.floor(Math.random() * 90000 + 10000) + Date.now().toString().slice(-4),
       productId: activeBuyingProduct.id,
       productName: activeBuyingProduct.title,
-      price: activeBuyingProduct.price,
+      variantName,
+      price: purchasedPrice,
       qty: finalQty,
       buyerId: currentUser.id,
       sellerId: activeBuyingProduct.sellerId,
@@ -1780,30 +1798,41 @@ export default function App() {
                         className="group bg-[#111928] rounded-[20px] border border-zinc-800/80 overflow-hidden cursor-pointer transition-all duration-300 hover:border-zinc-700 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)] flex flex-col justify-between"
                       >
                         {/* IMAGE CONTAINER */}
-                        <div className="relative aspect-[4/3] w-full overflow-hidden flex items-center justify-center bg-zinc-900/50">
-                          {p.images && p.images.length > 0 && (
-                            isVideoVal(p.images[0]) ? (
-                               <video
-                                 src={p.images[0]}
-                                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 pointer-events-none"
-                                 muted
-                                 playsInline
-                               />
-                             ) : (
-                               <img
-                                 src={p.images[0]}
-                                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                 alt={p.title}
-                                 referrerPolicy="no-referrer"
-                               />
-                             )
-                          )}
+                        <div className="relative aspect-[4/3] w-full overflow-hidden flex flex-col bg-zinc-900/50">
+                          <div className="flex-1 w-full relative overflow-hidden flex items-center justify-center">
+                            {p.images && p.images.length > 0 && (
+                              isVideoVal(p.images[0]) ? (
+                                 <video
+                                   src={p.images[0]}
+                                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 pointer-events-none"
+                                   muted
+                                   playsInline
+                                 />
+                               ) : (
+                                 <img
+                                   src={p.images[0]}
+                                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                   alt={p.title}
+                                   referrerPolicy="no-referrer"
+                                 />
+                               )
+                            )}
+                            
+                            {p.stock === 0 && (
+                              <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
+                                <span className="px-3 py-1.5 bg-red-600 rounded-full text-[10px] text-white font-black uppercase tracking-widest leading-none shadow-md">
+                                  SOLD OUT
+                                </span>
+                              </div>
+                            )}
+                          </div>
                           
-                          {p.stock === 0 && (
-                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
-                              <span className="px-3 py-1.5 bg-red-600 rounded-full text-[10px] text-white font-black uppercase tracking-widest leading-none shadow-md">
-                                SOLD OUT
-                              </span>
+                          {/* Variant small images */}
+                          {p.variants && p.variants.some(v => v.imageUrl) && (
+                            <div className="h-10 w-full bg-zinc-950/80 flex gap-1 p-1 overflow-x-auto scrollbar-none border-t border-zinc-800 shrink-0">
+                              {p.variants.filter(v => v.imageUrl).map((v) => (
+                                <img key={v.id} src={v.imageUrl!} alt={v.name} className="h-full aspect-square object-cover rounded-md bg-zinc-900 border border-zinc-800" referrerPolicy="no-referrer" title={v.name} />
+                              ))}
                             </div>
                           )}
                         </div>
@@ -2129,7 +2158,7 @@ export default function App() {
 
                     {/* Pricing field */}
                     <div className="space-y-1">
-                      <label className="text-xs text-zinc-400 font-bold">Harga Jual Jasa/Item (Rupiah Rp)</label>
+                      <label className="text-xs text-zinc-400 font-bold">Harga Jual Jasa/Item (Rupiah Rp) - Default</label>
                       <input
                         type="number"
                         required
@@ -2139,6 +2168,103 @@ export default function App() {
                         onChange={(e) => setFormPrice(e.target.value)}
                         className="w-full bg-zinc-950 border border-zinc-805 text-xs sm:text-sm p-3 rounded-xl text-zinc-200 outline-none focus:border-primary font-bold font-mono"
                       />
+                    </div>
+
+                    {/* Variants / Kategori Produk */}
+                    <div className="space-y-3 pt-3 border-t border-zinc-800">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs text-zinc-400 font-bold">Variasi Produk (Opsional)</label>
+                        <button
+                          type="button"
+                          onClick={() => setFormVariants([...formVariants, { name: '', price: '', imageUrl: '' }])}
+                          className="text-[10px] bg-primary/20 text-primary px-2 py-1 rounded hover:bg-primary/30 font-bold flex items-center gap-1"
+                        >
+                          <Plus size={12} /> Tambah Variasi
+                        </button>
+                      </div>
+                      
+                      {formVariants.map((variant, idx) => (
+                        <div key={idx} className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl space-y-3 relative group">
+                          <button
+                            type="button"
+                            onClick={() => setFormVariants(formVariants.filter((_, i) => i !== idx))}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <label className="text-[10px] text-zinc-500 font-bold">Nama Variasi</label>
+                              <input
+                                type="text"
+                                placeholder="Cth: Paket 1 / Warna Merah"
+                                value={variant.name}
+                                onChange={(e) => {
+                                  const newVariants = [...formVariants];
+                                  newVariants[idx].name = e.target.value;
+                                  setFormVariants(newVariants);
+                                }}
+                                className="w-full bg-zinc-950 border border-zinc-800 text-xs p-2 rounded-lg text-zinc-200 outline-none focus:border-primary font-bold"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] text-zinc-500 font-bold">Harga Variasi</label>
+                              <input
+                                type="number"
+                                placeholder="Cth: 50000"
+                                value={variant.price}
+                                onChange={(e) => {
+                                  const newVariants = [...formVariants];
+                                  newVariants[idx].price = e.target.value;
+                                  setFormVariants(newVariants);
+                                }}
+                                className="w-full bg-zinc-950 border border-zinc-800 text-xs p-2 rounded-lg text-zinc-200 outline-none focus:border-primary font-bold font-mono"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <label className="text-[10px] text-zinc-500 font-bold flex items-center justify-between">
+                              <span>Foto Variasi (Opsional)</span>
+                            </label>
+                            {variant.imageUrl ? (
+                              <div className="relative inline-block">
+                                <img src={variant.imageUrl} className="h-16 w-16 object-cover rounded-lg border border-zinc-700" alt="Variant" />
+                                <button type="button" onClick={() => {
+                                  const newVariants = [...formVariants];
+                                  newVariants[idx].imageUrl = '';
+                                  setFormVariants(newVariants);
+                                }} className="absolute -top-1 -right-1 bg-red-500 rounded-full p-0.5 text-white shadow"><X size={10} /></button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <label className="cursor-pointer bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] py-1.5 px-3 rounded-lg font-semibold transition-colors">
+                                  Unggah Foto
+                                  <input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const reader = new FileReader();
+                                        reader.onload = (ev) => {
+                                          if (ev.target?.result) {
+                                            const newVariants = [...formVariants];
+                                            newVariants[idx].imageUrl = ev.target.result as string;
+                                            setFormVariants(newVariants);
+                                          }
+                                        };
+                                        reader.readAsDataURL(file);
+                                      }
+                                    }}
+                                  />
+                                </label>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
 
                     {/* Detailed descriptions */}
@@ -2304,6 +2430,7 @@ export default function App() {
                           setFormDiscord('');
                           setFormWa('');
                           setFormImages([]);
+                          setFormVariants([]);
                           setActiveTab('home');
                         }}
                         className="px-5 py-2.5 bg-zinc-955 border border-zinc-850 hover:bg-zinc-800 rounded-xl text-xs font-bold text-zinc-300 transition-all font-semibold"
@@ -2380,9 +2507,15 @@ export default function App() {
                     </p>
                   </div>
                   
-                  <div className="bg-zinc-950/60 border border-zinc-850 px-4 py-2.5 rounded-xl self-start sm:self-center">
-                    <span className="text-[11px] text-zinc-500 font-bold block uppercase tracking-wider">Total Penjual Terdaftar</span>
-                    <span className="text-lg font-black text-primary">{users.length} Toko</span>
+                  <div className="flex gap-2 self-start sm:self-center">
+                    <div className="bg-zinc-950/60 border border-zinc-850 px-4 py-2.5 rounded-xl">
+                      <span className="text-[11px] text-zinc-500 font-bold block uppercase tracking-wider">Total Produk</span>
+                      <span className="text-lg font-black text-primary">{products.length} Item</span>
+                    </div>
+                    <div className="bg-zinc-950/60 border border-zinc-850 px-4 py-2.5 rounded-xl">
+                      <span className="text-[11px] text-zinc-500 font-bold block uppercase tracking-wider">Total Penjual</span>
+                      <span className="text-lg font-black text-primary">{users.length} Toko</span>
+                    </div>
                   </div>
                 </div>
 
@@ -2568,9 +2701,41 @@ export default function App() {
             <div className="space-y-1 bg-zinc-950 p-3.5 rounded-xl border border-zinc-900 text-center">
               <span className="text-xs text-zinc-500 font-bold uppercase leading-none block">Harga Satuan</span>
               <span className="text-2xl font-black text-primary">
-                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(activeBuyingProduct.price)}
+                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(
+                  activeBuyingProduct.variants && activeBuyingProduct.variants.length > 0
+                    ? activeBuyingProduct.variants.find(v => v.id === buyVariantId)?.price || activeBuyingProduct.price
+                    : activeBuyingProduct.price
+                )}
               </span>
             </div>
+
+            {/* Variant Selection */}
+            {activeBuyingProduct.variants && activeBuyingProduct.variants.length > 0 && (
+              <div className="space-y-2 pt-2">
+                <label className="text-xs text-zinc-400 font-extrabold block">Pilih Variasi Produk</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {activeBuyingProduct.variants.map((v) => (
+                    <button
+                      key={v.id}
+                      onClick={() => setBuyVariantId(v.id)}
+                      className={`flex items-center gap-2 p-2 rounded-xl border text-left transition-all ${
+                        buyVariantId === v.id ? 'border-primary bg-primary/10' : 'border-zinc-800 bg-zinc-900 hover:bg-zinc-850'
+                      }`}
+                    >
+                      {v.imageUrl && (
+                        <img src={v.imageUrl} alt={v.name} className="w-8 h-8 rounded-lg object-cover bg-zinc-800" />
+                      )}
+                      <div className="flex-1 overflow-hidden">
+                        <div className="text-[10px] font-bold text-zinc-200 truncate">{v.name}</div>
+                        <div className="text-[9px] font-mono text-primary truncate">
+                          {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(v.price)}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Qty Adjustment field */}
             <div className="space-y-1.5">
@@ -2606,7 +2771,7 @@ export default function App() {
                 onClick={handleExecuteOrder}
                 className="flex-1 py-3 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-black transition-all shadow-lg active:scale-95"
               >
-                Konfirmasi Beli ({new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(activeBuyingProduct.price * Math.min(activeBuyingProduct.stock, parseInt(buyQty) || 1))})
+                Konfirmasi Beli ({new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format((activeBuyingProduct.variants && activeBuyingProduct.variants.length > 0 ? activeBuyingProduct.variants.find(v => v.id === buyVariantId)?.price || activeBuyingProduct.price : activeBuyingProduct.price) * Math.min(activeBuyingProduct.stock, parseInt(buyQty) || 1))})
               </button>
             </div>
 

@@ -111,7 +111,8 @@ export const PromoSlider: React.FC<PromoSliderProps> = ({ banners }) => {
                 )}
 
                 <button 
-                  className="mt-2 sm:mt-4 px-3 sm:px-5 py-1.5 sm:py-2.5 bg-[#0084ff] hover:bg-blue-500 text-white text-[10px] sm:text-sm font-black rounded-lg transition-all active:scale-95 shadow-lg border border-blue-400"
+                  className="mt-2 sm:mt-4 px-3 sm:px-5 py-1.5 sm:py-2.5 bg-[#0084ff] hover:bg-opacity-80 text-white text-[10px] sm:text-sm font-black rounded-lg transition-all active:scale-95 shadow-lg border border-white/20"
+                  style={{ backgroundColor: banner.accentColor || '#0084ff' }}
                 >
                   {banner.buttonText || 'Lihat Penawaran'}
                 </button>
