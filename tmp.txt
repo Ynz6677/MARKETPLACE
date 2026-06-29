@@ -1,0 +1,61 @@
+121:  const [currentUser, setCurrentUser] = useState<User | null>(null);
+125:  const liveUser = currentUser ? users.find((u) => u.id === currentUser.id) : null;
+126:  const isCurrentUserBanned = liveUser?.isBanned || currentUser?.isBanned || false;
+143:  latestCurrentUserRef.current = currentUser;
+647:    if (!currentUser) return;
+652:    const updatedUser = { ...currentUser, ...sanitizedUpdates };
+656:    if (currentUser.id !== 'u_guest') {
+663:      const updatedUsersList = users.map((u) => (u.id === currentUser.id ? updatedUser : u));
+670:    if (!currentUser) return;
+682:      ...currentUser,
+690:    const updatedUsersList = users.map((u) => (u.id === currentUser.id ? updatedUser : u));
+699:    if (!currentUser) return;
+760:        sellerId: currentUser.id,
+854:    if (!p || !currentUser) return;
+857:    const parsedChatId = `${currentUser.id}-${p.sellerId}-${p.id}`;
+866:        senderId: currentUser.id,
+889:    if (!currentUser || !activeBuyingProduct) return;
+957:      buyerId: currentUser.id,
+968:    const parsedChatId = `${currentUser.id}-${activeBuyingProduct.sellerId}-${activeBuyingProduct.id}`;
+973:      senderId: currentUser.id,
+1075:    if (currentUser?.id === userId && updatedUser) {
+1099:    if (currentUser?.id === userId && updatedUser) {
+1109:    if (currentUser?.role !== 'developer') {
+1113:    if (userId === currentUser.id) {
+1156:    if (currentUser?.id === userId && updatedUser) {
+1180:    if (currentUser?.id === userId && updatedUser) {
+1205:    if (!currentUser) return;
+1214:    const buyerId = currentUser.id === sellerId ? receiverId : currentUser.id;
+1221:      senderId: currentUser.id,
+1235:  const unreadMessagesCount = currentUser
+1236:    ? chats.filter((m) => m.receiverId === currentUser.id && !m.isRead).length
+1241:    if (!currentUser) return;
+1242:    const hasUnread = chats.some((m) => m.chatId === chatId && m.receiverId === currentUser.id && !m.isRead);
+1246:      if (m.chatId === chatId && m.receiverId === currentUser.id && !m.isRead) {
+1258:    if (!currentUser || chats.length === 0) return;
+1262:    if (lastMsg.receiverId === currentUser.id && !lastMsg.isRead && lastMsg.id !== lastNotifiedMsgIdRef.current) {
+1295:  }, [chats, currentUser]);
+1409:      {currentUser && !forceAuthScreen && (
+1412:            currentUser={currentUser}
+1443:      {currentUser && isCurrentUserBanned && (
+1451:      {(!currentUser || forceAuthScreen) ? (
+1481:                  {currentUser.profilePic ? (
+1483:                      src={currentUser.profilePic} 
+1485:                      alt={currentUser.username} 
+1493:                {currentUser.verified && (
+1501:                  {currentUser.username}
+1506:                    {currentUser.customRole || (currentUser.role === 'user' ? 'Member' : currentUser.role)}
+1598:                  {currentUser.profilePic ? (
+1599:                    <img src={currentUser.profilePic} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+1608:              {(currentUser.role === 'developer' || currentUser.role === 'admin') && (
+1656:              {currentUser?.id === 'u_guest' ? (
+1985:                  currentUser={currentUser}
+2004:                currentUser={currentUser}
+2022:                currentUser={currentUser}
+2039:              currentUser.id === 'u_guest' ? (
+2063:              ) : currentUser.role !== 'seller' && currentUser.role !== 'admin' && currentUser.role !== 'developer' ? (
+2086:                        value={currentUser.username}
+2519:                currentUser={currentUser}
+2569:                    const isSelf = u.id === currentUser.id;
+2689:            {activeTab === 'developer' && (currentUser.role === 'developer' || currentUser.role === 'admin') && (
+2691:                currentUser={currentUser}

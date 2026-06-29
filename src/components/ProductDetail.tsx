@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Product, User, Transaction } from '../types';
 import { ArrowLeft, MessageSquare, ShoppingCart, ChevronLeft, ChevronRight, CheckCircle, Smartphone, Shield, Zap, RefreshCw, Trophy, Info } from 'lucide-react';
 
@@ -329,7 +330,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
               </div>
               <div className="flex items-center justify-between mt-1">
                 <p className="text-xs text-zinc-400 font-bold">{sellerProductsCount} produk</p>
-                {seller.storeStatus === 'offline' ? (
+                {(!seller.lastActive || Date.now() - seller.lastActive >= 5 * 60 * 1000) ? (
                   <span className="text-zinc-500 font-black text-[10px] uppercase flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
                     Offline
@@ -408,7 +409,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
       </div>
 
       {/* Bottom Sheet Drawer for Full Description detail view */}
-      {showFullDesc && (
+      {showFullDesc && createPortal(
         <div 
           className="fixed inset-0 bg-black/80 flex items-end justify-center z-[110] p-0 sm:p-4 backdrop-blur-xs animate-fade-in cursor-default" 
           onClick={() => setShowFullDesc(false)}
@@ -449,7 +450,8 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

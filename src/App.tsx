@@ -344,6 +344,29 @@ export default function App() {
     // No-op (Always dark mode)
   };
 
+  // Automatic online status (update lastActive every 1 minute)
+  useEffect(() => {
+    if (!currentUser || currentUser.id === 'u_guest') return;
+
+    const updateActivity = () => {
+      import('./db').then(({ saveUser }) => {
+        saveUser({ ...currentUser, lastActive: Date.now() });
+      });
+    };
+
+    // Update on mount
+    updateActivity();
+
+    // Update periodically
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        updateActivity();
+      }
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [currentUser?.id]);
+
   // Interactive Product Upload & Editing Forms states
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formCategory, setFormCategory] = useState<Product['category']>('Robux');
@@ -2621,7 +2644,7 @@ export default function App() {
                             </div>
                             <div>
                               <span className="text-zinc-550 font-semibold block text-[10.5px]">Status Seller</span>
-                              {u.storeStatus === 'offline' ? (
+                              {(!u.lastActive || Date.now() - u.lastActive >= 5 * 60 * 1000) ? (
                                 <span className="text-zinc-500 font-black text-xs uppercase flex items-center gap-1">
                                   <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
                                   Offline

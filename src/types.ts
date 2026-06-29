@@ -10,7 +10,7 @@ export interface User {
   isBanned?: boolean;
   balance?: number;
   email?: string;
-  storeStatus?: 'online' | 'offline';
+  lastActive?: number;
 }
 
 export interface ProductVariant {
